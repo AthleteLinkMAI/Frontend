@@ -22,37 +22,41 @@ import RequestData from "./pages/RequestData";
 import CreateRequest from "./pages/CreateRequest";
 import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
+import PasswordResetRequest from "./pages/PasswordResetRequest";
+import PasswordResetConfirm from "./pages/PasswordResetConfirm";
 
 const queryClient = new QueryClient();
 
 export const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* --- ПУБЛИЧНЫЕ МАРШРУТЫ (Доступны всем) --- */}
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<AuthRedirect />} />
-          <Route path="/requests" element={<AllRequests />} />
-          {/* --- ПРИВАТНЫЕ МАРШРУТЫ (Только для авторизованных) --- */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/:username" element={<PublicProfile />} />
-            <Route path="/:username/authors" element={<ProfileOwnerGuard><Authors /></ProfileOwnerGuard>} />
-            <Route path="/:username/profile" element={<ProfileOwnerGuard><Profile /></ProfileOwnerGuard>} />
-            <Route path="/:username/stats" element={<ProfileOwnerGuard><ProfileStats /></ProfileOwnerGuard>} />
-            <Route path="/:username/requests" element={<ProfileOwnerGuard><Requests /></ProfileOwnerGuard>} />
-            <Route path="/:username/settings" element={<ProfileOwnerGuard><Settings /></ProfileOwnerGuard>} />
-            <Route path="/requests/:id" element={<RequestData />} />
-            <Route path="/requests/create" element={<CreateRequest />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+	<QueryClientProvider client={queryClient}>
+		<TooltipProvider>
+			<Toaster />
+			<Sonner />
+			<BrowserRouter>
+				<Routes>
+					{/* --- ПУБЛИЧНЫЕ МАРШРУТЫ (Доступны всем) --- */}
+					<Route path="/" element={<Index />} />
+					<Route path="/login" element={<Login />} />
+					<Route path="/register" element={<Register />} />
+					<Route path="/password-reset" element={<PasswordResetRequest />} />
+					<Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
+					<Route path="/profile" element={<AuthRedirect />} />
+					<Route path="/requests" element={<AllRequests />} />
+					{/* --- ПРИВАТНЫЕ МАРШРУТЫ (Только для авторизованных) --- */}
+					<Route element={<ProtectedRoute />}>
+						<Route path="/:username" element={<PublicProfile />} />
+						<Route path="/:username/authors" element={<ProfileOwnerGuard><Authors /></ProfileOwnerGuard>} />
+						<Route path="/:username/profile" element={<ProfileOwnerGuard><Profile /></ProfileOwnerGuard>} />
+						<Route path="/:username/stats" element={<ProfileOwnerGuard><ProfileStats /></ProfileOwnerGuard>} />
+						<Route path="/:username/requests" element={<ProfileOwnerGuard><Requests /></ProfileOwnerGuard>} />
+						<Route path="/:username/settings" element={<ProfileOwnerGuard><Settings /></ProfileOwnerGuard>} />
+						<Route path="/requests/:id" element={<RequestData />} />
+						<Route path="/requests/create" element={<CreateRequest />} />
+						<Route path="/leaderboard" element={<Leaderboard />} />
+					</Route>
+					<Route path="*" element={<NotFound />} />
+				</Routes>
+			</BrowserRouter>
+		</TooltipProvider>
+	</QueryClientProvider>
 );

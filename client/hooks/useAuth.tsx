@@ -1,85 +1,113 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCookie } from "@/lib/csrf";
+import { api } from "@/lib/apiClient";
+import { tokenStorage } from "@/lib/tokenStorage";
 
-interface User {
-    full_name: string,
-    username: string,
-    email: string,
-    telegram: string,
-    gender: string,
-    birth_date: string,
-    city: string,
-    secret_question?: string | null,
+export interface User {
+	id: number;
+	full_name: string;
+	username: string;
+	email: string;
+	telegram?: string;
+	gender?: string;
+	birth_date?: string;
+	city?: string;
 }
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export interface RegisterPayload {
+	username: string;
+	email: string;
+	password: string;
+	full_name: string;
+	telegram?: string;
+	birth_date?: string;
+	city?: string;
+}
 
-const fetchUser = async (): Promise<User | null> => {
-  const response = await fetch(`${apiUrl}/profile/me`, {
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-  return response.json();
+const fetchMe = async (): Promise<User | null> => {
+	if (!tokenStorage.getAccess() && !tokenStorage.getRefresh()) return null;
+	try {
+		return await api.get<User>("/api/profile/me");
+	} catch {
+		return null;
+	}
 };
 
 export function useAuth() {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 
-  const { data: user, isLoading, isError, refetch } = useQuery({
-    queryKey: ['auth-user'],
-    queryFn: fetchUser,
-    retry: false, 
-    staleTime: 1000 * 60 * 5,
-  });
+	const { data: user, isLoading, refetch } = useQuery({
+		queryKey: ["auth-user"],
+		queryFn: fetchMe,
+		retry: false,
+		staleTime: 1000 * 60 * 5,
+	});
 
-  const logoutUser = async () => {
-    try {
-        const csrfToken = getCookie('csrftoken');
-        if (!csrfToken) {
-          console.error('no csrf token')
-        }
+	// Реакция на 401 из apiClient
+	useEffect(() => {
+		const handler = () => {
+			queryClient.setQueryData(["auth-user"], null);
+			navigate("/login", { replace: true });
+		};
+		window.addEventListener("auth:logout", handler);
+		return () => window.removeEventListener("auth:logout", handler);
+	}, [navigate, queryClient]);
 
+	const login = async (email: string, password: string, remember = false) => {
+		const data = await api.post<{ accessToken: string; refreshToken: string }>(
+			"/api/auth/login",
+			{ email: email, password: password },
+			{ skipAuth: true }
+		);
+		tokenStorage.setTokens(data.accessToken, data.refreshToken);
+		if (!remember) {
+			// опционально: сессионное хранение
+		}
+		await queryClient.invalidateQueries({ queryKey: ["auth-user"] });
+	};
 
-        const response = await fetch(`${apiUrl}/user/logout/`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'X-CSRFToken': csrfToken || '',
-            },
-            credentials: 'include', 
-        });
+	const register = async (payload: RegisterPayload) => {
+		const data = await api.post<{ accessToken: string; refreshToken: string }>(
+				"/api/auth/register",
+				payload,
+				{ skipAuth: true }
+			);
+			tokenStorage.setTokens(data.accessToken, data.refreshToken);
+			await queryClient.invalidateQueries({ queryKey: ["auth-user"] });
+	};
 
-        if (response.ok) {
-            queryClient.setQueryData(['auth-user'], null);
-            console.log('Successfull logout');
-            navigate('/'); 
-            
-            return true;
-        } else {
-            console.error("Logout failed on server side.");
-            queryClient.setQueryData(['auth-user'], null);
-            navigate('/'); 
-            return false;
-        }
-    } catch (error) {
-        console.error("Network error during logout:", error);
-        queryClient.setQueryData(['auth-user'], null);
-        navigate('/login');
-        return false;
-    }
-  };
+	const logoutUser = async () => {
+		try {
+			await api.delete("/api/auth/logout", {});
+		} catch {
+			/* игнорим — всё равно чистим локально */
+		}
+		tokenStorage.clear();
+		queryClient.setQueryData(["auth-user"], null);
+		navigate("/");
+	};
 
-  return {
-    user,           
-    isLoading,      
-    isAuth: !!user,
-    logoutUser,
-    refetchUser: refetch,
-  };
+	const requestPasswordReset = (email: string) =>
+		api.post("/api/auth/password-reset/request", { email }, { skipAuth: true });
+
+	const confirmPasswordReset = (token: string, newPassword: string) =>
+		api.post(
+			"/api/auth/password-reset/confirm",
+			{ token, newPassword },
+			{ skipAuth: true }
+		);
+
+	return {
+		user,
+		isLoading,
+		isAuth: !!user,
+		login,
+		register,
+		logoutUser,
+		refetchUser: refetch,
+		requestPasswordReset,
+		confirmPasswordReset,
+	};
 }

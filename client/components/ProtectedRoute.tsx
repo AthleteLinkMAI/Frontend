@@ -1,19 +1,20 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { tokenStorage } from "@/lib/tokenStorage";
 
 export default function ProtectedRoute() {
-  const { user, isLoading } = useAuth();
+	const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        Загрузка...
-      </div>
-    );
-  }
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-black text-white">
+				Загрузка...
+			</div>
+		);
+	}
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  return <Outlet />;
+	if (!user && !tokenStorage.getRefresh()) {
+		return <Navigate to="/login" replace />;
+	}
+	return <Outlet />;
 }

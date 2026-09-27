@@ -8,7 +8,6 @@ import { RATING_SPORTS } from "@/constants/filterConstants";
 import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 
 export default function Leaderboard() {
-  const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("overall");
   const [sportFilter, setSportFilter] = useState("Литрбол");

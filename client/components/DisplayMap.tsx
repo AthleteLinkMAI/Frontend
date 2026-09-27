@@ -13,6 +13,8 @@ export default function DisplayMap({
     address,
     height="327px",
 }: DisplayMapProps) {
+    const APIkey = import.meta.env.VITE_API_KEY_YANDEX_MAP;
+
     const mapContainer = useRef<HTMLDivElement>(null);
 
     const centerCoords: [number, number] = [latitude, longitude];
@@ -25,7 +27,7 @@ export default function DisplayMap({
             }
 
             const script = document.createElement("script");
-            script.src = "https://api-maps.yandex.ru/2.1/?apikey=fc9d5a45-9eb0-4980-a2c8-21b53a4ddbd4&lang=ru_RU";
+            script.src = `https://api-maps.yandex.ru/2.1/?apikey=${APIkey}&lang=ru_RU`;
             script.async = true;
             script.onload = () => {
                 (window as any).ymaps.ready(initializeMap);
