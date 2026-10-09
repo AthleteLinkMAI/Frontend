@@ -22,8 +22,9 @@ interface MapSelectionData {
 interface Sport {
 	id: number,
 	name: string,
-	min_required_players: number,
-	max_required_players: number,
+	minPlayers: number,
+	maxPlayers: number,
+	iconUrl: number,
 }
 
 export default function CreateRequest() {
@@ -39,7 +40,7 @@ export default function CreateRequest() {
 	useEffect(() => {
 		const fetchSports = async () => {
 			try {
-				const data = await api.get<Sport[]>("/api/requests/sports");
+				const data = await api.get<Sport[]>("sports");
 				setSports(data);
 			} catch (error) {
 				console.error("Network error:", error);
@@ -159,18 +160,19 @@ export default function CreateRequest() {
 		const eventDate = `${y}-${m}-${d}T${time}:00`; // "2026-09-27T18:30:00"
 
 		const payload = {
-			title,
+			title: title,
+			description: description,
 			sportId: selectedSportId,
-			playersCount: Number(playersCount),
-			eventDate,
-			location: formData.location,
-			description,
+			maxPlayers: Number(playersCount),
+			eventDate: eventDate,
+			numberOfRounds: 1,
+			addressText: formData.location,
 			latitude: formData.latitude,
 			longitude: formData.longitude,
 		};
 
 		try {
-			const data = await api.post<{detail?: string}>("/requests/create", payload);
+			await api.post<{detail?: string}>("requests", payload);
 			navigate(`/${user.username}/requests/`);
 		} catch (error) {
 			console.error(error);
@@ -198,7 +200,7 @@ export default function CreateRequest() {
 				{/* Main Content */}
 				<div className="flex-1 p-7">
 					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.full_name}`}
+						greeting={`${getTimeGreeting()}, ${user.username}`}
 						date={getCurrentDateFormatted()}
 					/>
 
@@ -291,17 +293,16 @@ export default function CreateRequest() {
 											</label>
 											<input
 												type="number"
-												// 🔑 Используем найденные лимиты
-												min={sportLimits.min_required_players}
-												max={sportLimits.max_required_players}
+												min={sportLimits.minPlayers}
+												max={sportLimits.maxPlayers}
 												value={playersCount}
 												onChange={(e) => setPlayersCount(e.target.value)}
-												placeholder={`От ${sportLimits.min_required_players} до ${sportLimits.max_required_players}`}
+												placeholder={`От ${sportLimits.minPlayers} до ${sportLimits.maxPlayers}`}
 												className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 text-[26px] text-black focus:outline-none"
 												required
 											/>
 											<p className="text-white/70 text-sm mt-1">
-												Для выбранного спорта требуется от {sportLimits.min_required_players} до {sportLimits.max_required_players} игроков.
+												Для выбранного спорта требуется от {sportLimits.minPlayers} до {sportLimits.maxPlayers} игроков.
 											</p>
 										</div>
 									)}
@@ -309,46 +310,46 @@ export default function CreateRequest() {
 
 								{/* --- 4. DATE --- */}
 								<div>
-								<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
-									Выберите дату
-								</label>
-								<Popover open={showDatePopover} onOpenChange={setShowDatePopover}>
-									<PopoverTrigger asChild>
-									<button type="button" className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 flex items-center justify-between">
-										<span className={`text-[24px] ${dateInput ? "text-black" : "text-black/40"}`}>
-										{dateInput || "ДД.ММ.ГГГГ"}
-										</span>
-										<span className="text-black/50 text-xl">📅</span>
-									</button>
-									</PopoverTrigger>
-									<PopoverContent className="w-auto p-0 bg-white">
-									<div className="p-4">
-										<input 
-											type="text" 
-											value={dateInput} 
-											onChange={e => handleDateInputChange(e.target.value)} 
-											placeholder="ДД.ММ.ГГГГ"
-											className="w-full h-[40px] border border-black rounded mb-2 px-2 text-black"
-										/>
-										{/* @ts-ignore */}
-										<Calendar selected={date} onSelect={handleCalendarSelect} mode="single" />
-									</div>
-									</PopoverContent>
-								</Popover>
+									<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
+										Выберите дату
+									</label>
+									<Popover open={showDatePopover} onOpenChange={setShowDatePopover}>
+										<PopoverTrigger asChild>
+											<button type="button" className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 flex items-center justify-between">
+												<span className={`text-[24px] ${dateInput ? "text-black" : "text-black/40"}`}>
+													{dateInput || "ДД.ММ.ГГГГ"}
+												</span>
+												<span className="text-black/50 text-xl">📅</span>
+											</button>
+										</PopoverTrigger>
+										<PopoverContent className="w-auto p-0 bg-white">
+											<div className="p-4">
+												<input 
+													type="text" 
+													value={dateInput} 
+													onChange={e => handleDateInputChange(e.target.value)} 
+													placeholder="ДД.ММ.ГГГГ"
+													className="w-full h-[40px] border border-black rounded mb-2 px-2 text-black"
+												/>
+												{/* @ts-ignore */}
+												<Calendar selected={date} onSelect={handleCalendarSelect} mode="single" />
+											</div>
+										</PopoverContent>
+									</Popover>
 								</div>
 
 								{/* --- 5. TIME --- */}
 								<div>
-								<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
-									Время
-								</label>
-								<input
-									type="text"
-									value={time}
-									onChange={(e) => setTime(e.target.value)}
-									placeholder="ЧЧ:ММ"
-									className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 text-[28px] text-black placeholder:text-black/40 outline-none"
-								/>
+									<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
+										Время
+									</label>
+									<input
+										type="text"
+										value={time}
+										onChange={(e) => setTime(e.target.value)}
+										placeholder="ЧЧ:ММ"
+										className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 text-[28px] text-black placeholder:text-black/40 outline-none"
+									/>
 								</div>
 
 							</div>
@@ -358,63 +359,63 @@ export default function CreateRequest() {
 								
 								{/* --- 6. DESCRIPTION (Описание) --- */}
 								<div>
-								<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
-									Описание (опционально)
-								</label>
-								<textarea
-									value={description}
-									onChange={(e) => setDescription(e.target.value)}
-									placeholder="Правила, требования к экипировке и т.д."
-									maxLength={512}
-									className="w-full h-[260px] rounded-[40px] bg-[#F9F9F9]/50 p-6 text-[24px] text-black placeholder:text-black/40 outline-none resize-none"
-								/>
-								<p className="text-white/60 text-sm mt-1 ml-2 text-right">
-									{description.length} / 512 символов
-								</p>
+									<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
+										Описание (опционально)
+									</label>
+									<textarea
+										value={description}
+										onChange={(e) => setDescription(e.target.value)}
+										placeholder="Правила, требования к экипировке и т.д."
+										maxLength={512}
+										className="w-full h-[260px] rounded-[40px] bg-[#F9F9F9]/50 p-6 text-[24px] text-black placeholder:text-black/40 outline-none resize-none"
+									/>
+									<p className="text-white/60 text-sm mt-1 ml-2 text-right">
+										{description.length} / 512 символов
+									</p>
 								</div>
 
 								{/* --- 7. LOCATION (Место) --- */}
 								<div>
-								<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
-									Место проведения
-								</label>
-								<div className="relative" ref={locationDropdownRef}>
-									<button
-									type="button"
-									onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-									className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 flex items-center justify-between mb-4"
-									>
-									<span className={`text-[22px] truncate ${formData.location ? "text-black" : "text-black/40"}`}>
-										{formData.location || "Адрес или точка на карте"}
-									</span>
-									<span className="text-black/50 text-xl">📍</span>
-									</button>
-									{showLocationDropdown && (
-									<div className="absolute top-[76px] left-0 w-full bg-[#2a2a2a] border-2 border-black rounded-[15px] shadow-lg z-50">
-										{locationSuggestions.map((loc) => (
+									<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
+										Место проведения
+									</label>
+									<div className="relative" ref={locationDropdownRef}>
 										<button
-											key={loc}
 											type="button"
-											onClick={() => {
-											setFormData(prev => ({
-												...prev,
-												location: loc,
-												latitude: null,
-												longitude: null,
-											}));
-
-											setShowLocationDropdown(false);
-											}}
-											className="w-full px-5 py-3 text-left text-white text-[18px] hover:bg-[#3a3a3a] border-b border-white/20"
+											onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+											className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 flex items-center justify-between mb-4"
 										>
-											{loc}
+											<span className={`text-[22px] truncate ${formData.location ? "text-black" : "text-black/40"}`}>
+												{formData.location || "Адрес или точка на карте"}
+											</span>
+											<span className="text-black/50 text-xl">📍</span>
 										</button>
-										))}
+										{showLocationDropdown && (
+										<div className="absolute top-[76px] left-0 w-full bg-[#2a2a2a] border-2 border-black rounded-[15px] shadow-lg z-50">
+											{locationSuggestions.map((loc) => (
+												<button
+													key={loc}
+													type="button"
+													onClick={() => {
+														setFormData(prev => ({
+															...prev,
+															location: loc,
+															latitude: null,
+															longitude: null,
+														}));
+
+														setShowLocationDropdown(false);
+													}}
+													className="w-full px-5 py-3 text-left text-white text-[18px] hover:bg-[#3a3a3a] border-b border-white/20"
+												>
+													{loc}
+												</button>
+											))}
+										</div>
+										)}
 									</div>
-									)}
-								</div>
-								
-								<YandexMap onAddressSelect={handleMapSelect} height="250px" />
+									
+									<YandexMap onAddressSelect={handleMapSelect} height="250px" />
 								</div>
 							</div>
 

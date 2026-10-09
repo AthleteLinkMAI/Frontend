@@ -9,7 +9,7 @@ import { api, ApiError } from "@/lib/apiClient";
 
 export default function Settings() {
 	const navigate = useNavigate();
-	const { logoutUser, user, isLoading } = useAuth();
+	const { logoutUser, user, isLoading, changePassword } = useAuth();
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 	const [currentPassword, setCurrentPassword] = useState("");
@@ -60,28 +60,25 @@ export default function Settings() {
 		setIsSubmitting(true);
 
 		try {
-			// TODO: согласовать путь с бэком (/api/profile/change-password vs /api/profile/password)
-			const data = await api.post<{ detail?: string }>(
-				"/api/profile/change-password",
-				{
-					currentPassword,
-					newPassword
-				}
-			);
+			const data = await changePassword(currentPassword, newPassword);
+
+			// const data = await api.post<{ detail?: string }>(
+			// 	"/api/profile/change-password",
+			// 	{
+			// 		currentPassword,
+			// 		newPassword
+			// 	}
+			// );
 
 			setPasswordSuccess(
-				data?.detail || "Пароль успешно изменён. Перезагрузите страницу."
+				"Пароль успешно изменён. Перезагрузите страницу."
 			);
 			setCurrentPassword("");
 			setNewPassword("");
 		} catch (err) {
 		if (err instanceof ApiError) {
 			const body = err.body;
-			if (body?.errors && Array.isArray(body.errors)) {
-				setPasswordErrors(body.errors);
-			} else if (body?.error) {
-				setPasswordErrorSingle(body.error);
-			} else if (body?.message) {
+			if (body?.message) {
 				setPasswordErrorSingle(body.message);
 			} else {
 				setPasswordErrorSingle(
@@ -122,110 +119,110 @@ export default function Settings() {
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
-		<div className="flex min-h-screen">
-			<SidebarNav activePage="settings" />
+			<div className="flex min-h-screen">
+				<SidebarNav activePage="settings" />
 
-			<div className="flex-1 p-7 overflow-y-auto">
-			<HeaderMenu
-				greeting={`${getTimeGreeting()}, ${user.full_name}`}
-				date={getCurrentDateFormatted()}
-			/>
+				<div className="flex-1 p-7 overflow-y-auto">
+					<HeaderMenu
+						greeting={`${getTimeGreeting()}, ${user.username}`}
+						date={getCurrentDateFormatted()}
+					/>
 
-			<div className="rounded-[10px] bg-white/50 p-8 relative min-h-[748px]">
-				<h2 className="text-black text-4xl font-bold mb-6">
-				Смена пароля
-				</h2>
+					<div className="rounded-[10px] bg-white/50 p-8 relative min-h-[748px]">
+						<h2 className="text-black text-4xl font-bold mb-6">
+							Смена пароля
+						</h2>
 
-				<div className="flex flex-col gap-4 mb-6">
-				<input
-					type="password"
-					value={currentPassword}
-					onChange={(e) => setCurrentPassword(e.target.value)}
-					placeholder="Ваш текущий пароль"
-					className="w-full max-w-[526px] h-[46px] rounded-lg bg-[#F9F9F9]/50 px-4 text-black/40 text-base outline-none placeholder:text-black/40"
-				/>
+						<div className="flex flex-col gap-4 mb-6">
+							<input
+								type="password"
+								value={currentPassword}
+								onChange={(e) => setCurrentPassword(e.target.value)}
+								placeholder="Ваш текущий пароль"
+								className="w-full max-w-[526px] h-[46px] rounded-lg bg-[#F9F9F9]/50 px-4 text-black/40 text-base outline-none placeholder:text-black/40"
+							/>
 
-				<input
-					type="password"
-					value={newPassword}
-					onChange={(e) => setNewPassword(e.target.value)}
-					placeholder="Ваш новый пароль"
-					className="w-full max-w-[526px] h-[45px] rounded-lg bg-[#F9F9F9]/50 px-4 text-black/40 text-base outline-none placeholder:text-black/40"
-				/>
-				</div>
+							<input
+								type="password"
+								value={newPassword}
+								onChange={(e) => setNewPassword(e.target.value)}
+								placeholder="Ваш новый пароль"
+								className="w-full max-w-[526px] h-[45px] rounded-lg bg-[#F9F9F9]/50 px-4 text-black/40 text-base outline-none placeholder:text-black/40"
+							/>
+						</div>
 
-				<p className="text-black text-base opacity-80 mb-3 max-w-[526px]">
-				Требования: не менее 8 символов, не менее 1 заглавной буквы, не
-				менее 1 строчной буквы, не менее 1 цифры
-				</p>
+						<p className="text-black text-base opacity-80 mb-3 max-w-[526px]">
+							Требования: не менее 8 символов, не менее 1 заглавной буквы, не
+							менее 1 строчной буквы, не менее 1 цифры
+						</p>
 
-				<div className="mb-4 max-w-[526px]">
-				{passwordSuccess && (
-					<div className="text-green-700 bg-green-100 p-3 rounded-md mb-2">
-					{passwordSuccess}
+						<div className="mb-4 max-w-[526px]">
+							{passwordSuccess && (
+								<div className="text-green-700 bg-green-100 p-3 rounded-md mb-2">
+									{passwordSuccess}
+								</div>
+							)}
+
+							{passwordErrorSingle && (
+								<div className="text-red-700 bg-red-100 p-3 rounded-md mb-2">
+								{passwordErrorSingle}
+								</div>
+							)}
+
+							{passwordErrors && passwordErrors.length > 0 && (
+								<div className="text-red-700 bg-red-100 p-3 rounded-md mb-2">
+									<ul className="list-disc pl-5">
+										{passwordErrors.map((err, i) => (
+										<li key={i}>{err}</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</div>
+
+						<button
+						onClick={handleChangePassword}
+						className={`w-[217px] h-[38px] rounded-lg text-white text-base text-center mb-20 ${
+							isSubmitting ? "bg-[#6ea0ff]/60" : "bg-[#4182F9]"
+						}`}
+						disabled={isSubmitting}
+						>
+						{isSubmitting ? "Отправка..." : "Изменить пароль"}
+						</button>
+
+						<div className="flex gap-4 items-center justify-end mb-6">
+						<button
+							onClick={handleLogout}
+							className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
+							disabled={isLoggingOut}
+						>
+							{isLoggingOut ? "Выход..." : "Выйти"}
+						</button>
+						</div>
+
+						<div className="flex gap-4 items-center justify-end ">
+						<button
+							onClick={handleDeleteAccount}
+							className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
+						>
+							Удалить учетную запись
+						</button>
+						</div>
+
+						<div className="flex justify-between items-end">
+						<p className="text-black text-base opacity-80">
+							App Version: 0.1 Alphadev 13.10.25
+						</p>
+						</div>
+
+						<img
+						src="/MAI_logo.png"
+						alt="MAI Logo"
+						className="absolute right-8 top-[280px] w-[367px] h-[354px] object-contain animate-levitate-active"
+						/>
 					</div>
-				)}
-
-				{passwordErrorSingle && (
-					<div className="text-red-700 bg-red-100 p-3 rounded-md mb-2">
-					{passwordErrorSingle}
-					</div>
-				)}
-
-				{passwordErrors && passwordErrors.length > 0 && (
-					<div className="text-red-700 bg-red-100 p-3 rounded-md mb-2">
-					<ul className="list-disc pl-5">
-						{passwordErrors.map((err, i) => (
-						<li key={i}>{err}</li>
-						))}
-					</ul>
-					</div>
-				)}
 				</div>
-
-				<button
-				onClick={handleChangePassword}
-				className={`w-[217px] h-[38px] rounded-lg text-white text-base text-center mb-20 ${
-					isSubmitting ? "bg-[#6ea0ff]/60" : "bg-[#4182F9]"
-				}`}
-				disabled={isSubmitting}
-				>
-				{isSubmitting ? "Отправка..." : "Изменить пароль"}
-				</button>
-
-				<div className="flex gap-4 items-center justify-end mb-6">
-				<button
-					onClick={handleLogout}
-					className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
-					disabled={isLoggingOut}
-				>
-					{isLoggingOut ? "Выход..." : "Выйти"}
-				</button>
-				</div>
-
-				<div className="flex gap-4 items-center justify-end ">
-				<button
-					onClick={handleDeleteAccount}
-					className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
-				>
-					Удалить учетную запись
-				</button>
-				</div>
-
-				<div className="flex justify-between items-end">
-				<p className="text-black text-base opacity-80">
-					App Version: 0.1 Alphadev 13.10.25
-				</p>
-				</div>
-
-				<img
-				src="/MAI_logo.png"
-				alt="MAI Logo"
-				className="absolute right-8 top-[280px] w-[367px] h-[354px] object-contain animate-levitate-active"
-				/>
 			</div>
-			</div>
-		</div>
 		</div>
 	);
 }

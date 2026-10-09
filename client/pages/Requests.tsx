@@ -7,27 +7,35 @@ import SidebarNav from "@/components/SidebarMenu";
 import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 import RequestCard from "@/components/RequestCard";
 import { api } from "@/lib/apiClient";
+import { RequestItem } from "./AllRequests";
 
-// Тип данных, приходящих с бэкенда (соответствует сериализатору)
-interface Request {
-	id: number;
-	eventName: string;
-	date: string;
-	sport: string;
-	applicationStatus: string;
-	personalResult: 'Win' | 'Loss' | '-' | string;
-	resultColor: "gray" | "black" | "green" | "red";
-}
 
 export default function Requests() {
 	const navigate = useNavigate();
-	const { user, isLoading } = useAuth();
+	const { user } = useAuth();
 
 	// 1. Запрос к API за списком заявок
-	const { data: requests = [], isLoading: isRequestsLoading, error } = useQuery<Request[]>({
+	const { data: requests = [], isLoading: isRequestsLoading, error } = useQuery<RequestItem[]>({
 		queryKey: ['requests'],
 		queryFn: async () => {
-			const data = await api.get<Request[]>("/api/request/");
+			let latitude: number = 0.0;
+			let longitude: number = 0.0;
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					latitude = position.coords.latitude;
+					longitude = position.coords.longitude;
+				}
+			);
+			const data = await api.get<RequestItem[]>(
+				"requests",
+				{
+					"lat": latitude,
+					"lon": longitude,
+					"radius": 5000,
+					"startDate": new Date(new Date().getTime() - (5 * 24 * 60 * 60 * 1000)).toDateString(),
+					"endDate": new Date(new Date().getTime() + (10 * 24 * 60 * 60 * 1000)).toDateString(),
+				}
+			);
 			return data;
 		}
 	});
@@ -40,7 +48,7 @@ export default function Requests() {
 				{/* Main Content */}
 				<div className="flex-1 p-7 overflow-y-auto">
 					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.full_name}`}
+						greeting={`${getTimeGreeting()}, ${user.username}`}
 						date={getCurrentDateFormatted()}
 					/>
 

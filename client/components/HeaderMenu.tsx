@@ -13,15 +13,17 @@ interface HeaderMenuProps {
 interface Request {
 	id: number;
 	title: string;
-	eventDate: string;
-	sport: { id: number; name: string };
-	status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
-	statusDisplay: string;
-	location: string;
+	sportName: string;
+	maxPlayers: number;
 	currentPlayers: number;
-	playersCount: number;
-	personalResult?: "WIN" | "LOSS" | "DRAW" | null;
+	eventDate: string;
+	addressText: string;
+	numberOfRounds: number;
+	registrationOpened: boolean;
+	latitude: number;
+	longitude: number;
 }
+
 
 export default function HeaderMenu({
 	greeting,
@@ -55,11 +57,23 @@ export default function HeaderMenu({
 			try {
 				setIsLoading(true);
 
-				const data = await api.get<Request[]>("/api/requests");
-				const active = data.filter((req: Request) =>
-					req.status.toLowerCase() === "active"
+				let latitude: number = 0.0;
+				let longitude: number = 0.0;
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						latitude = position.coords.latitude;
+						longitude = position.coords.longitude;
+					}
 				);
-				setActiveRequests(active);
+
+				const data = await api.get<Request[]>("requests", {
+					"lat": latitude,
+					"lon": longitude,
+					"radius": 5000,
+					"startDate": new Date(new Date().getTime() - (5 * 24 * 60 * 60 * 1000)).toDateString(),
+					"endDate": new Date(new Date().getTime() + (10 * 24 * 60 * 60 * 1000)).toDateString()
+				});
+				setActiveRequests(data);
 			} catch (error) {
 				console.error('Ошибка загрузки заявок:', error);
 			} finally {
