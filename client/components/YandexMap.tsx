@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { loadYmaps } from "@/lib/yandexMaps";
+import { loadYmaps, reverseGeocode } from "@/lib/yandexMaps";
 
 interface MapSelectionData {
 	address: string;
@@ -53,26 +53,11 @@ export default function YandexMap({
 
 					const [latitude, longitude] = coords;
 
-					fetch(`/api/geocode?longitude=${longitude}&latitude=${latitude}`)
-						.then((response) => {
-							if (!response.ok) {
-								return response.json().then(
-									(errorData) => {
-										throw new Error(
-											`HTTP ${response.status}: ${errorData?.error ?? "unknown"}`
-										);
-									},
-									() => {
-										throw new Error(`HTTP ${response.status}`);
-									}
-								);
-							}
-							return response.json();
-						})
-						.then((data) => {
-							if (data.address) {
+					reverseGeocode(coords)
+						.then((address) => {
+							if (address) {
 								onAddressSelectRef.current({
-									address: data.address,
+									address,
 									latitude: parseFloat(latitude.toFixed(7)),
 									longitude: parseFloat(longitude.toFixed(7)),
 								});
