@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import HeaderMenu from "@/components/HeaderMenu";
 import { Calendar } from "@/components/ui/calendar";
-import { getTimeGreeting } from '@/components/TimeParse';
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 import {
 	Popover,
 	PopoverTrigger,
@@ -81,11 +79,11 @@ export default function CreateRequest() {
 	const sportDropdownRef = useRef<HTMLDivElement>(null);
 	const locationDropdownRef = useRef<HTMLDivElement>(null);
 
-	const locationSuggestions = [
-		"г. Москва, ул. 1-я Лагерная, д. 1",
-		"г. Москва, Московский авиационный институт",
-		"г. Москва, ул. Ленина, д. 10",
-	];
+	// const locationSuggestions = [
+	// 	"г. Москва, ул. 1-я Лагерная, д. 1",
+	// 	"г. Москва, Московский авиационный институт",
+	// 	"г. Москва, ул. Ленина, д. 10",
+	// ];
 
 	// --- Handlers ---
 	const handleSportSelect = (sportId: number) => {
@@ -156,9 +154,11 @@ export default function CreateRequest() {
 
 		setIsEventLoading(true);
 
-		const [d, m, y] = dateInput.split(".");        // "27.09.2026"
-		const eventDate = `${y}-${m}-${d}T${time}:00`; // "2026-09-27T18:30:00"
+		const [d, m, y] = dateInput.split(".");
+		const local = new Date(`${y}-${m}-${d}T${time}:00`);
+		const eventDate = local.toISOString(); // "2026-09-27T18:30:00Z"
 
+		//TODO: доделать задачу количества раундов
 		const payload = {
 			title: title,
 			description: description,
@@ -199,10 +199,7 @@ export default function CreateRequest() {
 			<div className="flex min-h-screen">
 				{/* Main Content */}
 				<div className="flex-1 p-7">
-					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.username}`}
-						date={getCurrentDateFormatted()}
-					/>
+					<HeaderMenu />
 
 					{/* Main Content Area */}
 					<div className="rounded-[10px] bg-[#797777]/50 p-8 min-h-[918px]">
@@ -390,29 +387,29 @@ export default function CreateRequest() {
 											</span>
 											<span className="text-black/50 text-xl">📍</span>
 										</button>
-										{showLocationDropdown && (
-										<div className="absolute top-[76px] left-0 w-full bg-[#2a2a2a] border-2 border-black rounded-[15px] shadow-lg z-50">
-											{locationSuggestions.map((loc) => (
-												<button
-													key={loc}
-													type="button"
-													onClick={() => {
-														setFormData(prev => ({
-															...prev,
-															location: loc,
-															latitude: null,
-															longitude: null,
-														}));
+										{/* {showLocationDropdown && (
+										// <div className="absolute top-[76px] left-0 w-full bg-[#2a2a2a] border-2 border-black rounded-[15px] shadow-lg z-50">
+										// 	{locationSuggestions.map((loc) => (
+										// 		<button
+										// 			key={loc}
+										// 			type="button"
+										// 			onClick={() => {
+										// 				setFormData(prev => ({
+										// 					...prev,
+										// 					location: loc,
+										// 					latitude: null,
+										// 					longitude: null,
+										// 				}));
 
-														setShowLocationDropdown(false);
-													}}
-													className="w-full px-5 py-3 text-left text-white text-[18px] hover:bg-[#3a3a3a] border-b border-white/20"
-												>
-													{loc}
-												</button>
-											))}
-										</div>
-										)}
+										// 				setShowLocationDropdown(false);
+										// 			}}
+										// 			className="w-full px-5 py-3 text-left text-white text-[18px] hover:bg-[#3a3a3a] border-b border-white/20"
+										// 		>
+										// 			{loc}
+										// 		</button>
+										// 	))}
+										// </div>
+										)} */}
 									</div>
 									
 									<YandexMap onAddressSelect={handleMapSelect} height="250px" />

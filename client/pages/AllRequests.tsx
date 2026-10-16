@@ -1,41 +1,28 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
 import { useAuth } from "@/hooks/useAuth";
-import { getTimeGreeting } from '@/components/TimeParse';
+import { useActiveRequests, RequestItem } from "@/hooks/useActiveRequests";
 import { DATE_FILTERS } from "@/constants/filterConstants";
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
-import { api } from "@/lib/apiClient";
 
-export interface RequestItem {
-	id: number;
-	title: string;
-	sportName: string;
-	maxPlayers: number;
-	currentPlayers: number;
-	eventDate: string;
-	addressText: string;
-	numberOfRounds: number;
-	registrationOpened: boolean;
-	latitude: number;
-	longitude: number;
-}
 
 export default function AllRequests() {
 	const navigate = useNavigate();
-	const { user, isLoading } = useAuth();
+	const { user, isLoading: isAuthLoading } = useAuth();
 
 	const [sportFilter, setSportFilter] = useState("Все виды спорта");
 	const [dateFilter, setDateFilter] = useState("За все время");
-
-	const [requests, setRequests] = useState<RequestItem[]>([]);
-	const [isRequestLoading, setisRequestLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 
 	const [showSportDropdown, setShowSportDropdown] = useState(false);
 	const [showDateDropdown, setShowDateDropdown] = useState(false);
 	const sportDropdownRef = useRef<HTMLDivElement>(null);
 	const dateDropdownRef = useRef<HTMLDivElement>(null);
+
+	const {
+		data: requests = [],
+		isLoading: isRequestLoading,
+		error,
+	} = useActiveRequests();
 
 	const availableSportOptions = useMemo(() => {
 		const uniqueSports = new Set(
@@ -49,38 +36,12 @@ export default function AllRequests() {
 		return options;
 	}, [requests, sportFilter]);
 
-	const fetchPlannedRequests = useCallback(async () => {
-		setisRequestLoading(true);
-		setError(null);
-		try {
-			let latitude: number = 0.0;
-			let longitude: number = 0.0;
-			navigator.geolocation.getCurrentPosition(
-				(position) => {
-					latitude = position.coords.latitude;
-					longitude = position.coords.longitude;
-				}
-			);
-
-			const data = await api.get<RequestItem[]>("requests", {
-				"lat": latitude,
-				"lon": longitude,
-				"radius": 5000,
-				"startDate": new Date(new Date().getTime() - (5 * 24 * 60 * 60 * 1000)).toDateString(),
-				"endDate": new Date(new Date().getTime() + (10 * 24 * 60 * 60 * 1000)).toDateString(),
-			});
-			setRequests(data);
-		} catch (err) {
-			console.error("Ошибка при загрузке заявок:", err);
-			setError("Не удалось загрузить запланированные заявки. Проверьте API_URL и статус бэкенда.");
-		} finally {
-			setisRequestLoading(false);
-		}
-	}, []);
-
+	// Если выбранного вида спорта больше нет в списке — сбрасываем
 	useEffect(() => {
-		fetchPlannedRequests();
-	}, [fetchPlannedRequests]);
+		if (!availableSportOptions.includes(sportFilter)) {
+			setSportFilter("Все виды спорта");
+		}
+	}, [availableSportOptions, sportFilter]);
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -98,7 +59,7 @@ export default function AllRequests() {
 
 	const filteredRequests = useMemo(() => {
 		let currentRequests = requests;
-		if(sportFilter !== 'Все виды спорта') {
+		if (sportFilter !== "Все виды спорта") {
 			currentRequests = currentRequests.filter(
 				(request) => request.sportName === sportFilter
 			);
@@ -109,9 +70,6 @@ export default function AllRequests() {
 
 		const tomorrow = new Date(today);
 		tomorrow.setDate(tomorrow.getDate() + 1);
-
-		const dayAfterTomorrow = new Date(tomorrow);
-		dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
 		const startOfWeek = new Date(today);
 		const dayOfWeek = today.getDay();
@@ -137,78 +95,59 @@ export default function AllRequests() {
 		const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 		endOfMonth.setHours(23, 59, 59, 999);
 
+		const byDateAsc = (a: RequestItem, b: RequestItem) =>
+			new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
+
 		switch (dateFilter) {
 			case "За все время":
-				return [...currentRequests].sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return [...currentRequests].sort(byDateAsc);
 
 			case "Сегодня":
-				return currentRequests.filter(request => {
-					const requestDate = new Date(request.eventDate);
-					const requestDay = new Date(requestDate);
-					requestDay.setHours(0, 0, 0, 0);
-
-					return requestDay.getTime() === today.getTime();
-				}).sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return currentRequests
+					.filter((r) => {
+						const d = new Date(r.eventDate);
+						d.setHours(0, 0, 0, 0);
+						return d.getTime() === today.getTime();
+					})
+					.sort(byDateAsc);
 
 			case "Завтра":
-				return currentRequests.filter(request => {
-					const requestDate = new Date(request.eventDate);
-					const requestDay = new Date(requestDate);
-					requestDay.setHours(0, 0, 0, 0);
-
-					return requestDay.getTime() === tomorrow.getTime();
-				}).sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return currentRequests
+					.filter((r) => {
+						const d = new Date(r.eventDate);
+						d.setHours(0, 0, 0, 0);
+						return d.getTime() === tomorrow.getTime();
+					})
+					.sort(byDateAsc);
 
 			case "На этой неделе":
-				return currentRequests.filter(request => {
-					const requestDate = new Date(request.eventDate);
-					return requestDate >= startOfWeek && requestDate <= endOfWeek;
-				}).sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return currentRequests
+					.filter((r) => {
+						const d = new Date(r.eventDate);
+						return d >= startOfWeek && d <= endOfWeek;
+					})
+					.sort(byDateAsc);
 
 			case "На следующей неделе":
-				return currentRequests.filter(request => {
-					const requestDate = new Date(request.eventDate);
-					return requestDate >= startOfNextWeek && requestDate <= endOfNextWeek;
-				}).sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return currentRequests
+					.filter((r) => {
+						const d = new Date(r.eventDate);
+						return d >= startOfNextWeek && d <= endOfNextWeek;
+					})
+					.sort(byDateAsc);
 
 			case "В этом месяце":
-				return currentRequests.filter(request => {
-					const requestDate = new Date(request.eventDate);
-					return requestDate >= startOfMonth && requestDate <= endOfMonth;
-				}).sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return currentRequests
+					.filter((r) => {
+						const d = new Date(r.eventDate);
+						return d >= startOfMonth && d <= endOfMonth;
+					})
+					.sort(byDateAsc);
 
 			default:
-				return [...currentRequests].sort((a, b) => {
-					const dateA = new Date(a.eventDate).getTime();
-					const dateB = new Date(b.eventDate).getTime();
-					return dateA - dateB;
-				});
+				return [...currentRequests].sort(byDateAsc);
 		}
-  	}, [requests, sportFilter, dateFilter]);
+	}, [requests, sportFilter, dateFilter]);
 
 
 
@@ -226,176 +165,166 @@ export default function AllRequests() {
 		}
 	};
 
-	const formatRating = (rating?: number) => {
-		// Используем toFixed(0) для целого числа рейтинга
-		return rating !== undefined && rating !== null ? `Ср. рейтинг: ~${rating.toFixed(0)}` : 'Ср. рейтинг: N/A';
+	if (isAuthLoading) {
+		return <div className="text-white text-center p-10">Загрузка профиля...</div>;
 	}
-  
-	const user_greeting_text = user?.username
-		? `${getTimeGreeting()}, ${user.username}`
-		: `${getTimeGreeting()}`
-
+	
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
 			<div className="flex min-h-screen">
 				<div className="flex-1 p-7 overflow-y-auto">
 				
-					<HeaderMenu
-						greeting={user_greeting_text}
-						date={getCurrentDateFormatted()}
-					/>
+					<HeaderMenu />
 
 					{/* Main Content Area */}
 					<div className="rounded-[10px] bg-[#797777]/50 p-8 min-h-[918px]">
 						{/* Title and Filters */}
 						<div className="flex items-center justify-between mb-8">
-						<h1 className="text-white text-[50px] font-light">Заявки</h1>
+							<h1 className="text-white text-[50px] font-light">Заявки</h1>
 
-						<div className="flex gap-4">
-							{/* Sport Filter */}
-							<div className="relative" ref={sportDropdownRef}>
-							<button
-								onClick={() => setShowSportDropdown(!showSportDropdown)}
-								className="w-[380px] h-[76px] rounded-[20px] border-[2.6px] border-black bg-[#D9D9D9]/40 flex items-center justify-center px-6 relative"
-							>
-								<svg
-								className="absolute left-6"
-								width="29"
-								height="2"
-								viewBox="0 0 29 2"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
+							<div className="flex gap-4">
+								{/* Sport Filter */}
+								<div className="relative" ref={sportDropdownRef}>
+								<button
+									onClick={() => setShowSportDropdown(!showSportDropdown)}
+									className="w-[380px] h-[76px] rounded-[20px] border-[2.6px] border-black bg-[#D9D9D9]/40 flex items-center justify-center px-6 relative"
 								>
-								<line
-									y1="1"
-									x2="29"
-									y2="1"
-									stroke="#9D9D9D"
-									strokeWidth="2"
-								/>
-								</svg>
-								<svg
-								className="absolute left-[62px]"
-								width="29"
-								height="2"
-								viewBox="0 0 29 2"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<line
-									y1="1"
-									x2="29"
-									y2="1"
-									stroke="#9D9D9D"
-									strokeWidth="2"
-								/>
-								</svg>
-								<span className="text-white text-[32px] font-light">
-								{sportFilter}
-								</span>
-							</button>
-
-							{/* Sport Dropdown Menu */}
-							{showSportDropdown && (
-								<div className="absolute top-[88px] left-0 w-[380px] bg-[#2a2a2a] border-[2.6px] border-black rounded-[20px] shadow-lg z-50">
-								{availableSportOptions.map((sport) => (
-									<button
-									key={sport}
-									onClick={() => {
-										setSportFilter(sport);
-										setShowSportDropdown(false);
-									}}
-									className="w-full px-6 py-4 text-left text-white text-[20px] font-light hover:bg-[#3a3a3a] transition-colors first:rounded-t-[16px] last:rounded-b-[16px] border-b border-white/20 last:border-b-0"
+									<svg
+									className="absolute left-6"
+									width="29"
+									height="2"
+									viewBox="0 0 29 2"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
 									>
-									{sport}
-									</button>
-								))}
-								</div>
-							)}
-							</div>
-
-							{/* Date Filter */}
-							<div className="relative" ref={dateDropdownRef}>
-							<button
-								onClick={() => setShowDateDropdown(!showDateDropdown)}
-								className="w-[380px] h-[76px] rounded-[20px] border-[2.6px] border-black bg-[#D9D9D9]/40 flex items-center justify-center px-6 relative"
-							>
-								<svg
-								className="absolute left-6"
-								width="29"
-								height="2"
-								viewBox="0 0 29 2"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<line
-									y1="1"
-									x2="29"
-									y2="1"
-									stroke="#9D9D9D"
-									strokeWidth="2"
-								/>
-								</svg>
-								<svg
-								className="absolute left-[62px]"
-								width="29"
-								height="2"
-								viewBox="0 0 29 2"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<line
-									y1="1"
-									x2="29"
-									y2="1"
-									stroke="#9D9D9D"
-									strokeWidth="2"
-								/>
-								</svg>
-								<span className="text-white text-[32px] font-light">
-								{dateFilter}
-								</span>
-							</button>
-
-							{/* Date Dropdown Menu */}
-							{showDateDropdown && (
-								<div className="absolute top-[88px] left-0 w-[380px] bg-[#2a2a2a] border-[2.6px] border-black rounded-[20px] shadow-lg z-50">
-								{DATE_FILTERS.map((date) => (
-									<button
-									key={date}
-									onClick={() => {
-										setDateFilter(date);
-										setShowDateDropdown(false);
-									}}
-									className="w-full px-6 py-4 text-left text-white text-[20px] font-light hover:bg-[#3a3a3a] transition-colors first:rounded-t-[16px] last:rounded-b-[16px] border-b border-white/20 last:border-b-0"
+									<line
+										y1="1"
+										x2="29"
+										y2="1"
+										stroke="#9D9D9D"
+										strokeWidth="2"
+									/>
+									</svg>
+									<svg
+									className="absolute left-[62px]"
+									width="29"
+									height="2"
+									viewBox="0 0 29 2"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
 									>
-									{date}
-									</button>
-								))}
+									<line
+										y1="1"
+										x2="29"
+										y2="1"
+										stroke="#9D9D9D"
+										strokeWidth="2"
+									/>
+									</svg>
+									<span className="text-white text-[32px] font-light">
+									{sportFilter}
+									</span>
+								</button>
+
+								{/* Sport Dropdown Menu */}
+								{showSportDropdown && (
+									<div className="absolute top-[88px] left-0 w-[380px] bg-[#2a2a2a] border-[2.6px] border-black rounded-[20px] shadow-lg z-50">
+									{availableSportOptions.map((sport) => (
+										<button
+										key={sport}
+										onClick={() => {
+											setSportFilter(sport);
+											setShowSportDropdown(false);
+										}}
+										className="w-full px-6 py-4 text-left text-white text-[20px] font-light hover:bg-[#3a3a3a] transition-colors first:rounded-t-[16px] last:rounded-b-[16px] border-b border-white/20 last:border-b-0"
+										>
+										{sport}
+										</button>
+									))}
+									</div>
+								)}
 								</div>
-							)}
+
+								{/* Date Filter */}
+								<div className="relative" ref={dateDropdownRef}>
+								<button
+									onClick={() => setShowDateDropdown(!showDateDropdown)}
+									className="w-[380px] h-[76px] rounded-[20px] border-[2.6px] border-black bg-[#D9D9D9]/40 flex items-center justify-center px-6 relative"
+								>
+									<svg
+									className="absolute left-6"
+									width="29"
+									height="2"
+									viewBox="0 0 29 2"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+									>
+									<line
+										y1="1"
+										x2="29"
+										y2="1"
+										stroke="#9D9D9D"
+										strokeWidth="2"
+									/>
+									</svg>
+									<svg
+									className="absolute left-[62px]"
+									width="29"
+									height="2"
+									viewBox="0 0 29 2"
+									fill="none"
+									xmlns="http://www.w3.org/2000/svg"
+									>
+									<line
+										y1="1"
+										x2="29"
+										y2="1"
+										stroke="#9D9D9D"
+										strokeWidth="2"
+									/>
+									</svg>
+									<span className="text-white text-[32px] font-light">
+									{dateFilter}
+									</span>
+								</button>
+
+								{/* Date Dropdown Menu */}
+								{showDateDropdown && (
+									<div className="absolute top-[88px] left-0 w-[380px] bg-[#2a2a2a] border-[2.6px] border-black rounded-[20px] shadow-lg z-50">
+									{DATE_FILTERS.map((date) => (
+										<button
+										key={date}
+										onClick={() => {
+											setDateFilter(date);
+											setShowDateDropdown(false);
+										}}
+										className="w-full px-6 py-4 text-left text-white text-[20px] font-light hover:bg-[#3a3a3a] transition-colors first:rounded-t-[16px] last:rounded-b-[16px] border-b border-white/20 last:border-b-0"
+										>
+										{date}
+										</button>
+									))}
+									</div>
+								)}
+								</div>
 							</div>
-						</div>
 						</div>
 							
 						{isRequestLoading && (
-						<div className="text-white text-center text-3xl py-10">
-							Загрузка...
-						</div>
-						)}
-						{error && (
-						<div className="text-red-400 text-center text-3xl py-10">
-							Ошибка загрузки: {error}
-							<div className="mt-4 text-xl text-yellow-300">
-								Сервер недоступен
+							<div className="text-white text-center text-3xl py-10">
+								Загрузка...
 							</div>
-						</div>
+						)}
+
+						{error && (
+							<div className="text-red-400 text-center text-3xl py-10">
+								Ошибка загрузки: {String(error)}
+							</div>
 						)}
 						
-						{!isRequestLoading && filteredRequests.length === 0 && !error && (
-						<div className="text-white text-center text-3xl py-10">
-							Нет запланированных заявок, соответствующих текущим фильтрам.
-						</div>
+						{!isRequestLoading && !error && filteredRequests.length === 0 && (
+							<div className="text-white text-center text-3xl py-10">
+								Нет запланированных заявок, соответствующих текущим фильтрам.
+							</div>
 						)}
 
 						{/* Requests List */}

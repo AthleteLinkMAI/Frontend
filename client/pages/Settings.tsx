@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getTimeGreeting } from "@/components/TimeParse";
 import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
-import { api, ApiError } from "@/lib/apiClient";
+import { ApiError } from "@/lib/apiClient";
 
 export default function Settings() {
 	const navigate = useNavigate();
@@ -14,7 +12,6 @@ export default function Settings() {
 
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
-	const [passwordSecretAnswer, setPasswordSecretAnswer] = useState("");
 	const [passwordErrors, setPasswordErrors] = useState<string[] | null>(null);
 	const [passwordErrorSingle, setPasswordErrorSingle] = useState<string | null>(null);
 	const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
@@ -123,10 +120,7 @@ export default function Settings() {
 				<SidebarNav activePage="settings" />
 
 				<div className="flex-1 p-7 overflow-y-auto">
-					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.username}`}
-						date={getCurrentDateFormatted()}
-					/>
+					<HeaderMenu />
 
 					<div className="rounded-[10px] bg-white/50 p-8 relative min-h-[748px]">
 						<h2 className="text-black text-4xl font-bold mb-6">
@@ -210,16 +204,10 @@ export default function Settings() {
 						</div>
 
 						<div className="flex justify-between items-end">
-						<p className="text-black text-base opacity-80">
-							App Version: 0.1 Alphadev 13.10.25
-						</p>
+							<p className="text-black text-base opacity-80">
+								App Version: 0.1 Alphadev 13.10.25
+							</p>
 						</div>
-
-						<img
-						src="/MAI_logo.png"
-						alt="MAI Logo"
-						className="absolute right-8 top-[280px] w-[367px] h-[354px] object-contain animate-levitate-active"
-						/>
 					</div>
 				</div>
 			</div>

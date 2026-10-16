@@ -1,44 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { getTimeGreeting } from '@/components/TimeParse';
-import { useQuery } from "@tanstack/react-query";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 import RequestCard from "@/components/RequestCard";
-import { api } from "@/lib/apiClient";
-import { RequestItem } from "./AllRequests";
-
+import { useActiveRequests } from "@/hooks/useActiveRequests";
 
 export default function Requests() {
 	const navigate = useNavigate();
-	const { user } = useAuth();
-
-	// 1. Запрос к API за списком заявок
-	const { data: requests = [], isLoading: isRequestsLoading, error } = useQuery<RequestItem[]>({
-		queryKey: ['requests'],
-		queryFn: async () => {
-			let latitude: number = 0.0;
-			let longitude: number = 0.0;
-			navigator.geolocation.getCurrentPosition(
-				(position) => {
-					latitude = position.coords.latitude;
-					longitude = position.coords.longitude;
-				}
-			);
-			const data = await api.get<RequestItem[]>(
-				"requests",
-				{
-					"lat": latitude,
-					"lon": longitude,
-					"radius": 5000,
-					"startDate": new Date(new Date().getTime() - (5 * 24 * 60 * 60 * 1000)).toDateString(),
-					"endDate": new Date(new Date().getTime() + (10 * 24 * 60 * 60 * 1000)).toDateString(),
-				}
-			);
-			return data;
-		}
-	});
+	const {
+		data: requests = [],
+		isLoading: isRequestsLoading,
+		error,
+	} = useActiveRequests();
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
@@ -47,14 +19,10 @@ export default function Requests() {
 
 				{/* Main Content */}
 				<div className="flex-1 p-7 overflow-y-auto">
-					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.username}`}
-						date={getCurrentDateFormatted()}
-					/>
+					<HeaderMenu />
 
 					{/* Requests Section */}
 					<div className="rounded-[10px] bg-[#DDD]/50 p-8 min-h-[800px] relative">
-
 						<h2 className="text-black text-[50px] font-light text-center mb-8">
 							Текущие заявки
 						</h2>
@@ -62,7 +30,7 @@ export default function Requests() {
 						{/* Loading / Error / Empty States */}
 						{isRequestsLoading && <p className="text-center text-xl">Загрузка...</p>}
 						{error && <p className="text-center text-red-600 text-xl">Ошибка загрузки данных</p>}
-						{!isRequestsLoading && requests.length === 0 && (
+						{!isRequestsLoading && !error && requests.length === 0 && (
 							<p className="text-center text-xl text-gray-700">У вас пока нет активных заявок.</p>
 						)}
 

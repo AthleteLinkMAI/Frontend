@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SmallRequestCard from "@/components/SmallRequestCard";
-import { useActiveRequests } from "@/hooks/useActiveRequest";
+import { useActiveRequests } from "@/hooks/useActiveRequests";
 
 export default function Index() {
 	const { user } = useAuth();
 	const navigate = useNavigate();
 
-	const { data: activeRequests = [], isLoading: isRequestsLoading } = useActiveRequests(!!user);
+	const { data: activeRequests = [], isLoading: isRequestsLoading } = useActiveRequests();
 
 	// Состояния для выпадающего списка заявок
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);

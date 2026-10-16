@@ -10,7 +10,7 @@ interface RequestCardProps {
 		eventDate: string;
 		addressText: string;
 		numberOfRounds: number;
-		registrationOpened: boolean;
+		registrationOpen: boolean;
 		latitude: number;
 		longitude: number;
 	};
@@ -88,10 +88,10 @@ export default function RequestCard({ request }: RequestCardProps) {
 					{/* Application Status */}
 					<div className="flex items-center justify-between">
 						<span className="text-black text-2xl font-light">
-							Статус заявки
+							Статус заявки:
 						</span>
 						<span className="text-black text-2xl font-light">
-							{request.registrationOpened ? "Открыта регистрация" : "Регистрация закончена" }
+							{request.registrationOpen ? "открыта регистрация" : "регистрация закончена" }
 						</span>
 					</div>
 					{/* Game Result */}

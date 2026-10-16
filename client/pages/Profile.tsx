@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { getTimeGreeting } from "@/components/TimeParse";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 
 export default function Profile() {
 	const { user, isLoading, updateUser, changeEmail } = useAuth();
@@ -49,10 +46,7 @@ export default function Profile() {
 				<SidebarNav activePage="profile" />
 
 				<div className="flex-1 p-7 overflow-y-auto">
-					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.username}`}
-						date={getCurrentDateFormatted()}
-					/>
+					<HeaderMenu />
 
 					<div className="rounded-[10px] overflow-hidden">
 						<div className="h-[88px] bg-gradient-to-r from-[#878DB3] to-[#001AFF]/30 relative">

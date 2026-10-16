@@ -1,7 +1,7 @@
-import type { RequestListItem } from "@/hooks/useActiveRequest";
+import type { RequestItem } from "@/hooks/useActiveRequests";
 
 interface SmallRequestCardProps {
- 	request: RequestListItem;
+ 	request: RequestItem;
 }
 
 export default function SmallRequestCard({ request }: SmallRequestCardProps) {
@@ -23,7 +23,7 @@ export default function SmallRequestCard({ request }: SmallRequestCardProps) {
 				<div className="flex items-center gap-2">
 					<div className="border border-black rounded-[15px] px-2 py-1">
 						<span className="text-black text-xs font-light">
-							{request.eventDate}
+							{new Date(request.eventDate).toLocaleString()}
 						</span>
 					</div>
 					<div className="border border-black rounded-[15px] px-2 py-0.5">
@@ -39,7 +39,7 @@ export default function SmallRequestCard({ request }: SmallRequestCardProps) {
 					<div className="flex items-center justify-between">
 						<span className="text-black text-xs font-light">Регистрация:</span>
 						<span className="text-black text-xs font-medium">
-							{request.registrationOpened ? "открыта" : "закрыта" }
+							{request.registrationOpen === true ? "открыта" : "закрыта" }
 						</span>
 					</div>
 					<div className="flex items-center justify-between">
@@ -49,7 +49,7 @@ export default function SmallRequestCard({ request }: SmallRequestCardProps) {
 								className={`w-[12px] h-[12px] rounded-full border border-black bg-[#48FF55]`}
 							></div>
 						<span className="text-black text-xs font-medium">
-							{request.currentPlayers}/{request.currentPlayers}
+							{request.currentPlayers}/{request.maxPlayers}
 						</span>
 						</div>
 					</div>

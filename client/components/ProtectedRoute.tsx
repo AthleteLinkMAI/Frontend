@@ -13,7 +13,7 @@ export default function ProtectedRoute() {
 		);
 	}
 
-	if (!user && !tokenStorage.getRefresh()) {
+	if (!user && !tokenStorage.getAccess()) {
 		return <Navigate to="/login" replace />;
 	}
 	return <Outlet />;

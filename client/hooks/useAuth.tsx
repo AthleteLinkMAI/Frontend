@@ -3,13 +3,13 @@ import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError, refreshAccessToken } from "@/lib/apiClient";
 import { tokenStorage } from "@/lib/tokenStorage";
-import { email, string } from "zod/v4";
 
 
 const ME_QUERY_KEY = ["auth-user"] as const;
 
 
 export interface User {
+	id: string;
 	username: string;
 	email: string;
 	isVerified: boolean;
@@ -25,7 +25,7 @@ interface RegisterPayload {
 
 async function fetchMe(): Promise<User | null> {
 	return api.get<User>("user/me");
-};
+}
 
 
 export function useAuth() {
@@ -67,8 +67,19 @@ export function useAuth() {
 				});
 			}
 
-			await queryClient.invalidateQueries({queryKey: ME_QUERY_KEY});
-			await queryClient.fetchQuery({ queryKey:ME_QUERY_KEY, queryFn: fetchMe });
+			const me = await queryClient.fetchQuery({
+				queryKey:ME_QUERY_KEY,
+				queryFn: fetchMe
+			});
+
+			if (!me) {
+				throw new ApiError(500, {
+					code: "NO_USER",
+					message: "Failed to load user after login",
+				})
+			}
+
+			return me;
 		},
 		[queryClient]
 	);
@@ -109,7 +120,7 @@ export function useAuth() {
 
 	const confirmPasswordReset = useCallback((email: string, code: string) => {
 		return api.post<void>(
-			"verification/verify-password-reset-",
+			"verification/verify-password-reset",
 			{"email": email, "code": code},
 			{ skipAuth: true },
 		);
