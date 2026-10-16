@@ -2,6 +2,10 @@ stages:
   - build
   - deploy
 
+variables:
+  DOCKERHUB_USER: tr0f1mka
+  DOCKERHUB_REPOSITORY_NAME: athletelink-frontend
+
 .docker_template:
   services:
     - docker:dind
