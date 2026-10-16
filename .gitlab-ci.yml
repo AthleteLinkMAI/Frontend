@@ -24,8 +24,8 @@ build-job:
   script:
     - | 
       docker build \
-      --build-arg VITE_API_URL=$VITE_API_URL \
-      --build-arg VITE_API_KEY_YANDEX_MAP=$VITE_API_KEY_YANDEX_MAP \
+      --build-arg VITE_API_URL="$VITE_API_URL" \
+      --build-arg VITE_API_KEY_YANDEX_MAP="$VITE_API_KEY_YANDEX_MAP" \
       -t $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest .
     - docker push $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest
   only:
