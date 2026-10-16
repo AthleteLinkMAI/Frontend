@@ -34,6 +34,13 @@ build-job:
 deploy-job:
   image: docker:27
   stage: deploy
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - >-
+      echo -e "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile
+      /dev/null" > ~/.ssh/config
+    - chmod 600 ~/.ssh/id_ed25519
   script:
     - ssh -i ~/.ssh/id_ed25519 root@$SSH_REMOTE_HOST "
       docker stop  athlete-link-frontend || true &&
