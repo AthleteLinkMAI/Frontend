@@ -33,3 +33,17 @@ export function loadYmaps(): Promise<any> {
 
 	return ymapsPromise;
 }
+
+export async function reverseGeocode(coords: number[]): Promise<string | null> {
+	const ymaps = await loadYmaps();
+	const res = await ymaps.geocode(coords, { results: 1 });
+	const place = res.geoObjects.get(0);
+	if (!place) return null;
+
+	// Same format as before: "Тверская улица, д. 7, г. Москва"
+	const street = place.getThoroughfare();
+	const house = place.getPremiseNumber();
+	const city = place.getLocalities()?.[0];
+	const parts = [street, house && `д. ${house}`, city && `г. ${city}`].filter(Boolean);
+	return parts.length ? parts.join(", ") : place.getAddressLine();
+}
