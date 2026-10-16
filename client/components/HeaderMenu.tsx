@@ -89,7 +89,7 @@ export default function HeaderMenu({
 						<h3 className="text-black text-lg font-medium">Активные заявки ({activeRequests.length})</h3>
 						<button
 							onClick={() => {
-							navigate(`/${user.username}/requests/`);
+							navigate("/my-requests");
 							setIsDropdownOpen(false);
 							}}
 							className="text-[#4182F9] text-sm hover:underline font-medium"

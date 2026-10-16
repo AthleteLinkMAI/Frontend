@@ -114,9 +114,6 @@ export default function Profile() {
 									</div>
 									<div>
 										<p className="text-black text-base">{email}</p>
-										<p className="text-black/50 text-base">
-											Изменен 10 дней назад
-										</p>
 									</div>
 									<button className="ml-auto bg-[#4182F9] text-white px-5 py-2 rounded-lg text-base">
 										Изменить адрес эл. почты

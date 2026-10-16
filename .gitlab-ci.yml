@@ -2,6 +2,10 @@ stages:
   - build
   - deploy
 
+variables:
+  DOCKERHUB_USER: tr0f1mka
+  DOCKERHUB_REPOSITORY_NAME: athletelink-frontend
+
 .docker_template:
   services:
     - docker:dind
@@ -18,7 +22,11 @@ build-job:
   stage: build
   extends: .docker_template
   script:
-    - docker build -t $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest .
+    - | 
+      docker build \
+      --build-arg VITE_API_URL=$VITE_API_URL \
+      --build-arg VITE_API_KEY_YANDEX_MAP=$VITE_API_KEY_YANDEX_MAP \
+      -t $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest .
     - docker push $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest
   only:
     - main
@@ -34,14 +42,13 @@ build-job:
     - chmod 600 ~/.ssh/id_ed25519
 
 deploy-job:
-  image: docker:27
   stage: deploy
   extends: .deploy_template
   script:
     - ssh -i ~/.ssh/id_ed25519 root@$SSH_REMOTE_HOST "
       docker stop  athlete-link-frontend || true &&
       docker rm    athlete-link-frontend || true &&
-      docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest &&
+      docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest || true &&
       docker run -d --name athlete-link-frontend -p 8079:8080 $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME
       "
   only:

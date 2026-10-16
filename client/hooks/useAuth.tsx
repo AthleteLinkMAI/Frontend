@@ -151,6 +151,15 @@ export function useAuth() {
 		[queryClient]
 	)
 
+	const deleteUser = useCallback( async () => {
+		await api.delete("user/delete");
+		tokenStorage.clear();
+		queryClient.setQueryData(ME_QUERY_KEY, null);
+		queryClient.invalidateQueries({queryKey: ME_QUERY_KEY});
+		console.log("Deleting account...");
+		navigate("/", { replace: true });
+	}, [queryClient, navigate]);
+
 	return {
 		user,
 		isLoading,
@@ -164,5 +173,6 @@ export function useAuth() {
 		changePassword,
 		changeEmail,
 		updateUser,
+		deleteUser
 	};
 }

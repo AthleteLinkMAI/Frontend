@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
 import { ApiError } from "@/lib/apiClient";
 
 export default function Settings() {
-	const navigate = useNavigate();
-	const { logoutUser, user, isLoading, changePassword } = useAuth();
+	const { logoutUser, user, isLoading, changePassword, deleteUser } = useAuth();
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 	const [currentPassword, setCurrentPassword] = useState("");
@@ -16,6 +14,8 @@ export default function Settings() {
 	const [passwordErrorSingle, setPasswordErrorSingle] = useState<string | null>(null);
 	const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	const [isDeletingAccount, setisDeletingAccount] = useState(false);
 
 	if (isLoading) {
 		return <div>Загрузка настроек...</div>;
@@ -57,16 +57,7 @@ export default function Settings() {
 		setIsSubmitting(true);
 
 		try {
-			const data = await changePassword(currentPassword, newPassword);
-
-			// const data = await api.post<{ detail?: string }>(
-			// 	"/api/profile/change-password",
-			// 	{
-			// 		currentPassword,
-			// 		newPassword
-			// 	}
-			// );
-
+			await changePassword(currentPassword, newPassword);
 			setPasswordSuccess(
 				"Пароль успешно изменён. Перезагрузите страницу."
 			);
@@ -103,14 +94,26 @@ export default function Settings() {
 		}
 	};
 
-	const handleDeleteAccount = () => {
+	const handleDeleteAccount = async () => {
 		const confirmed = window.confirm(
 			"Вы уверены, что хотите удалить учетную запись? Это действие необратимо."
 		);
 		if (confirmed) {
-			// TODO: заменить на api.delete('/api/profile/me') когда бэк будет готов
-			console.log("Deleting account...");
-			navigate("/");
+			setisDeletingAccount(true);
+			try {
+				await deleteUser();
+			}
+			catch (err) {
+				if (err instanceof ApiError) {
+					window.alert(err.body?.message ?? "Не удалось удалить аккаунт");
+				}
+				else {
+					window.alert("Ошибка соединения с сервером");
+				}
+			}
+			finally {
+				setisDeletingAccount(false);
+			}
 		}
 	};
 
@@ -159,7 +162,7 @@ export default function Settings() {
 
 							{passwordErrorSingle && (
 								<div className="text-red-700 bg-red-100 p-3 rounded-md mb-2">
-								{passwordErrorSingle}
+									{passwordErrorSingle}
 								</div>
 							)}
 
@@ -175,38 +178,33 @@ export default function Settings() {
 						</div>
 
 						<button
-						onClick={handleChangePassword}
-						className={`w-[217px] h-[38px] rounded-lg text-white text-base text-center mb-20 ${
-							isSubmitting ? "bg-[#6ea0ff]/60" : "bg-[#4182F9]"
-						}`}
-						disabled={isSubmitting}
+							onClick={handleChangePassword}
+							className={`w-[217px] h-[38px] rounded-lg text-white text-base text-center mb-20 ${
+								isSubmitting ? "bg-[#6ea0ff]/60" : "bg-[#4182F9]"
+							}`}
+							disabled={isSubmitting}
 						>
-						{isSubmitting ? "Отправка..." : "Изменить пароль"}
+							{isSubmitting ? "Отправка..." : "Изменить пароль"}
 						</button>
 
 						<div className="flex gap-4 items-center justify-end mb-6">
-						<button
-							onClick={handleLogout}
-							className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
-							disabled={isLoggingOut}
-						>
-							{isLoggingOut ? "Выход..." : "Выйти"}
-						</button>
+							<button
+								onClick={handleLogout}
+								className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
+								disabled={isLoggingOut}
+							>
+								{isLoggingOut ? "Выход..." : "Выйти"}
+							</button>
 						</div>
 
 						<div className="flex gap-4 items-center justify-end ">
-						<button
-							onClick={handleDeleteAccount}
-							className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
-						>
-							Удалить учетную запись
-						</button>
-						</div>
-
-						<div className="flex justify-between items-end">
-							<p className="text-black text-base opacity-80">
-								App Version: 0.1 Alphadev 13.10.25
-							</p>
+							<button
+								onClick={handleDeleteAccount}
+								className="w-[257px] h-[38px] rounded-lg bg-[#B52626] text-white text-base text-center"
+								disabled={isDeletingAccount}
+							>
+								{isDeletingAccount ? "Удаление..." : "Удалить учетную запись"}
+							</button>
 						</div>
 					</div>
 				</div>

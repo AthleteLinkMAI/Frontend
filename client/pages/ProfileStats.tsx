@@ -9,6 +9,7 @@ import BouncingCat from "@/components/profile/BouncingCat";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
 import { clamp } from "@/lib/profileStats";
+import { PlayerStatsDto } from "@/types/playerStats";
 
 export default function ProfileStats() {
 	const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function ProfileStats() {
 								stats={stats}
 								username={user?.username}
 								onOpenPublicProfile={() =>
-									navigate(`/${user?.username}/`)
+									navigate(`/user/${user?.id}`)
 								}
 							/>
 						)}
@@ -60,7 +61,7 @@ export default function ProfileStats() {
 }
 
 interface StatsContentProps {
-	stats: import("@/types/playerStats").PlayerStatsDto;
+	stats: PlayerStatsDto;
 	username?: string;
 	onOpenPublicProfile: () => void;
 }

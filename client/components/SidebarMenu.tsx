@@ -144,12 +144,12 @@ const AuthorsIcon = () => (
 /*  Описание навигации                                                  */
 /* ------------------------------------------------------------------ */
 
-const NAV_ITEMS: NavItem[] = [
-	{ key: "profile",  path: "profile",  icon: <ProfileIcon /> },
-	{ key: "stats",    path: "stats",    icon: <StatsIcon /> },
-	{ key: "authors",  path: "authors",  icon: <AuthorsIcon /> },
-	{ key: "requests", path: "requests", icon: <RequestsIcon /> },
-	{ key: "settings", path: "settings", icon: <SettingsIcon /> },
+const NAV_ITEMS = [
+  { key: "profile",  path: "/profile",      label: "Профиль",     icon: <ProfileIcon /> },
+  { key: "stats",    path: "/stats",        label: "Статистика",  icon: <StatsIcon /> },
+  { key: "authors",  path: "/authors",      label: "Авторы",      icon: <AuthorsIcon /> },
+  { key: "requests", path: "/my-requests",  label: "Мои заявки",  icon: <RequestsIcon /> },
+  { key: "settings", path: "/settings",     label: "Настройки",   icon: <SettingsIcon /> },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -158,8 +158,6 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function SidebarNav({ activePage }: SidebarNavProps) {
 	const navigate = useNavigate();
-	const { username } = useParams<{ username: string }>();
-	const baseUrl = username ? `/${username}` : "";
 
 	return (
 		<div className="w-[76px] border-r-2 border-[#5F5C5C] relative flex flex-col items-center pt-8 gap-12">
@@ -169,7 +167,7 @@ export default function SidebarNav({ activePage }: SidebarNavProps) {
 					return (
 						<div key={item.key} className="relative">
 							<button
-								onClick={() => navigate(`${baseUrl}/${item.path}`)}
+								onClick={() => navigate(item.path)}
 								aria-label={item.key}
 							>
 								{active && (
