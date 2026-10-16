@@ -1,20 +1,10 @@
-import type { RequestListItem } from "@/hooks/useActiveRequest";
+import type { RequestItem } from "@/hooks/useActiveRequests";
 
 interface SmallRequestCardProps {
- 	request: RequestListItem;
+ 	request: RequestItem;
 }
 
 export default function SmallRequestCard({ request }: SmallRequestCardProps) {
-	const getStatusColor = (status: RequestListItem["status"]) => {
-		switch (status) {
-			case "ACTIVE": return "bg-[#48FF55]";
-			case "PLANNED": return "bg-black";
-			case "COMPLETED": return "bg-[#848484]";
-			case "CANCELLED": return "bg-[#FF7B7B]";
-			default: return "bg-gray-400";
-		}
-	};
-
 	return (
 		<div className="border border-black rounded-[20px] p-3 flex items-center justify-between backdrop-blur-sm relative overflow-hidden mb-2 bg-white/30 hover:bg-white/40 transition-colors cursor-pointer">
 			<div
@@ -33,12 +23,12 @@ export default function SmallRequestCard({ request }: SmallRequestCardProps) {
 				<div className="flex items-center gap-2">
 					<div className="border border-black rounded-[15px] px-2 py-1">
 						<span className="text-black text-xs font-light">
-							{request.eventDate}
+							{new Date(request.eventDate).toLocaleString()}
 						</span>
 					</div>
 					<div className="border border-black rounded-[15px] px-2 py-0.5">
 						<span className="text-black text-xs font-light">
-							{request.sport.name}
+							Активно
 						</span>
 					</div>
 				</div>
@@ -47,19 +37,19 @@ export default function SmallRequestCard({ request }: SmallRequestCardProps) {
 			<div className="border border-black rounded-[15px] px-3 py-1.5 min-w-[180px] relative z-10 bg-white/30 backdrop-blur-sm">
 				<div className="space-y-1">
 					<div className="flex items-center justify-between">
-						<span className="text-black text-xs font-light">Статус:</span>
+						<span className="text-black text-xs font-light">Регистрация:</span>
 						<span className="text-black text-xs font-medium">
-							{request.statusDisplay}
+							{request.registrationOpen === true ? "открыта" : "закрыта" }
 						</span>
 					</div>
 					<div className="flex items-center justify-between">
 						<span className="text-black text-xs font-light">Игроков:</span>
 						<div className="flex items-center gap-1">
 							<div
-								className={`w-[12px] h-[12px] rounded-full border border-black ${getStatusColor(request.status)}`}
+								className={`w-[12px] h-[12px] rounded-full border border-black bg-[#48FF55]`}
 							></div>
 						<span className="text-black text-xs font-medium">
-							{request.currentPlayers}/{request.playersCount}
+							{request.currentPlayers}/{request.maxPlayers}
 						</span>
 						</div>
 					</div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { loadYmaps } from "@/lib/yandexMaps";
 
 interface MapSelectionData {
 	address: string;
@@ -15,112 +16,88 @@ export default function YandexMap({
 	onAddressSelect,
 	height = "327px",
 }: YandexMapProps) {
-	const APIkey = import.meta.env.VITE_API_KEY_YANDEX_MAP;
 	const mapContainer = useRef<HTMLDivElement>(null);
 	const mapInstance = useRef<any>(null);
 
+	// держим актуальный колбэк в ref, чтобы не пересоздавать карту
+	const onAddressSelectRef = useRef(onAddressSelect);
 	useEffect(() => {
-		const loadYandexMaps = () => {
-			if ((window as any).ymaps) {
-				(window as any).ymaps.ready(initializeMap);
-				return;
-			}
-
-			const script = document.createElement("script");
-			script.src =
-				`https://api-maps.yandex.ru/2.1/?apikey=${APIkey}&lang=ru_RU`;
-			script.async = true;
-			script.onload = () => {
-				(window as any).ymaps.ready(initializeMap);
-			};
-			script.onerror = () => {
-				console.error("Failed to load Yandex Maps API");
-			};
-			document.head.appendChild(script);
-		};
-
-		const initializeMap = () => {
-			if (!mapContainer.current) return;
-
-			const ymaps = (window as any).ymaps;
-
-			const map = new ymaps.Map(mapContainer.current, {
-				center: [55.75, 37.57],
-				zoom: 12,
-				controls: ["zoomControl", "fullscreenControl"],
-			});
-
-			mapInstance.current = map;
-
-			map.events.add("click", (e: any) => {
-				const coords = e.get("coords");
-				if (!coords) return;
-
-				const placemark = new ymaps.Placemark(
-				coords,
-				{},
-				{
-					preset: "islands#redDotIcon",
-				},
-				);
-
-				map.geoObjects.removeAll();
-				map.geoObjects.add(placemark);
-
-				const [latitude, longitude] = coords;
-				const apiUrl = `/api/geocode?longitude=${longitude}&latitude=${latitude}`;
-
-				fetch(apiUrl)
-				.then((response) => {
-					console.log("Geocoding response status:", response.status);
-					if (!response.ok) {
-					return response
-						.json()
-						.then((errorData) => {
-						console.error("Server error response:", errorData);
-						throw new Error(
-							`HTTP error! status: ${response.status}, message: ${errorData.error}`,
-						);
-						})
-						.catch(() => {
-						throw new Error(`HTTP error! status: ${response.status}`);
-						});
-					}
-					return response.json();
-				})
-				.then((data) => {
-					console.log("Geocoding response data:", data, longitude, latitude);
-					if (data.address) {
-					const fixedLatitude = parseFloat(latitude.toFixed(7));
-					const fixedLongitude = parseFloat(longitude.toFixed(7));
-
-					onAddressSelect({
-						address: data.address,
-						latitude: fixedLatitude,
-						longitude: fixedLongitude,
-					});
-					} else {
-					console.warn("No address found in response");
-					}
-				})
-				.catch((error) => {
-					console.error("Geocoding error:", error);
-				});
-			});
-		};
-
-		loadYandexMaps();
+		onAddressSelectRef.current = onAddressSelect;
 	}, [onAddressSelect]);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		loadYmaps()
+			.then((ymaps) => {
+				if (cancelled || !mapContainer.current || mapInstance.current) return;
+
+				const map = new ymaps.Map(mapContainer.current, {
+					center: [55.75, 37.57],
+					zoom: 12,
+					controls: ["zoomControl", "fullscreenControl"],
+				});
+
+				mapInstance.current = map;
+
+				map.events.add("click", (e: any) => {
+					const coords = e.get("coords");
+					if (!coords) return;
+
+					const placemark = new ymaps.Placemark(coords, {}, {
+						preset: "islands#redDotIcon",
+					});
+
+					map.geoObjects.removeAll();
+					map.geoObjects.add(placemark);
+
+					const [latitude, longitude] = coords;
+
+					fetch(`/api/geocode?longitude=${longitude}&latitude=${latitude}`)
+						.then((response) => {
+							if (!response.ok) {
+								return response.json().then(
+									(errorData) => {
+										throw new Error(
+											`HTTP ${response.status}: ${errorData?.error ?? "unknown"}`
+										);
+									},
+									() => {
+										throw new Error(`HTTP ${response.status}`);
+									}
+								);
+							}
+							return response.json();
+						})
+						.then((data) => {
+							if (data.address) {
+								onAddressSelectRef.current({
+									address: data.address,
+									latitude: parseFloat(latitude.toFixed(7)),
+									longitude: parseFloat(longitude.toFixed(7)),
+								});
+							}
+						})
+						.catch((error) => {
+							console.error("Geocoding error:", error);
+						});
+				});
+			})
+			.catch((e) => console.error(e));
+
+		return () => {
+			cancelled = true;
+			if (mapInstance.current) {
+				mapInstance.current.destroy();
+				mapInstance.current = null;
+			}
+		};
+	}, []); // ← пустой массив — карта создаётся один раз
 
 	return (
 		<div
-		ref={mapContainer}
-		style={{
-			width: "100%",
-			height: height,
-			borderRadius: "40px",
-			overflow: "hidden",
-		}}
+			ref={mapContainer}
+			style={{ width: "100%", height, borderRadius: "40px", overflow: "hidden" }}
 		/>
 	);
 }

@@ -1,38 +1,32 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/lib/apiClient";
+import { api, ApiError, refreshAccessToken } from "@/lib/apiClient";
 import { tokenStorage } from "@/lib/tokenStorage";
 
+
+const ME_QUERY_KEY = ["auth-user"] as const;
+
+
 export interface User {
-	id: number;
-	full_name: string;
+	id: string;
 	username: string;
 	email: string;
-	telegram?: string;
-	gender?: string;
-	birth_date?: string;
-	city?: string;
+	isVerified: boolean;
 }
 
-export interface RegisterPayload {
+
+interface RegisterPayload {
 	username: string;
 	email: string;
 	password: string;
-	full_name: string;
-	telegram?: string;
-	birth_date?: string;
-	city?: string;
 }
 
-const fetchMe = async (): Promise<User | null> => {
-	if (!tokenStorage.getAccess() && !tokenStorage.getRefresh()) return null;
-	try {
-		return await api.get<User>("/api/profile/me");
-	} catch {
-		return null;
-	}
-};
+
+async function fetchMe(): Promise<User | null> {
+	return api.get<User>("user/me");
+}
+
 
 export function useAuth() {
 	const queryClient = useQueryClient();
@@ -45,59 +39,117 @@ export function useAuth() {
 		staleTime: 1000 * 60 * 5,
 	});
 
-	// Реакция на 401 из apiClient
+	//Выход при 401
 	useEffect(() => {
-		const handler = () => {
+		const onLogout = () => {
+			tokenStorage.clear();
 			queryClient.setQueryData(["auth-user"], null);
-			navigate("/login", { replace: true });
+			navigate("/login", {replace: true});
 		};
-		window.addEventListener("auth:logout", handler);
-		return () => window.removeEventListener("auth:logout", handler);
+		window.addEventListener("auth:logout", onLogout);
+		return () => window.removeEventListener("auth:logout", onLogout);
 	}, [navigate, queryClient]);
 
-	const login = async (email: string, password: string, remember = false) => {
-		const data = await api.post<{ accessToken: string; refreshToken: string }>(
-			"/api/auth/login",
-			{ email: email, password: password },
-			{ skipAuth: true }
-		);
-		tokenStorage.setTokens(data.accessToken, data.refreshToken);
-		if (!remember) {
-			// опционально: сессионное хранение
-		}
-		await queryClient.invalidateQueries({ queryKey: ["auth-user"] });
-	};
 
-	const register = async (payload: RegisterPayload) => {
-		const data = await api.post<{ accessToken: string; refreshToken: string }>(
-				"/api/auth/register",
-				payload,
+	const login = useCallback(
+		async (email, password) => {
+			await api.post<{}>(
+				"auth/login",
+				{ "email": email, "password": password },
 				{ skipAuth: true }
 			);
-			tokenStorage.setTokens(data.accessToken, data.refreshToken);
-			await queryClient.invalidateQueries({ queryKey: ["auth-user"] });
-	};
 
-	const logoutUser = async () => {
+			const access = await refreshAccessToken();
+			if (!access) {
+				throw new ApiError(500, {
+					code: "NO_ACCESS_TOKEN",
+					message: "The server did not issue an access token",
+				});
+			}
+
+			const me = await queryClient.fetchQuery({
+				queryKey:ME_QUERY_KEY,
+				queryFn: fetchMe
+			});
+
+			if (!me) {
+				throw new ApiError(500, {
+					code: "NO_USER",
+					message: "Failed to load user after login",
+				})
+			}
+
+			return me;
+		},
+		[queryClient]
+	);
+
+	
+	const register = useCallback(
+		async (payload: RegisterPayload) => {
+			await api.post<void>("user/register", payload, {
+				skipAuth: true,
+			});
+			await login(payload.email, payload.password);
+		},
+		[login]
+	);
+
+
+	const logoutUser = useCallback(async () => {
 		try {
-			await api.delete("/api/auth/logout", {});
+			await api.delete<void>("auth/logout");
 		} catch {
-			/* игнорим — всё равно чистим локально */
+			//Неважно
+		} finally {
+			tokenStorage.clear();
+			queryClient.setQueryData(ME_QUERY_KEY, null);
+			navigate("/");
 		}
-		tokenStorage.clear();
-		queryClient.setQueryData(["auth-user"], null);
-		navigate("/");
-	};
+	}, [navigate, queryClient]);
 
-	const requestPasswordReset = (email: string) =>
-		api.post("/api/auth/password-reset/request", { email }, { skipAuth: true });
 
-	const confirmPasswordReset = (token: string, newPassword: string) =>
-		api.post(
-			"/api/auth/password-reset/confirm",
-			{ token, newPassword },
-			{ skipAuth: true }
+	const sendPasswordResetCode = useCallback((email: string) => {
+		return api.post<void>(
+			"verification/send-password-reset-code",
+			email,
+			{ skipAuth: true },
 		);
+	}, []);
+
+
+	const confirmPasswordReset = useCallback((email: string, code: string) => {
+		return api.post<void>(
+			"verification/verify-password-reset",
+			{"email": email, "code": code},
+			{ skipAuth: true },
+		);
+	}, []);
+
+
+	const changePassword = useCallback((oldPassword: string, newPassword: string) => {
+		return api.put<void>(
+			"user/change-password",
+			{"oldPassword": oldPassword, "newPassword": newPassword}
+		);
+	}, []);
+
+
+	const changeEmail = useCallback((email: string) => {
+		return api.put<void>(
+			"user/change-email",
+			email,
+		);
+	}, []);
+
+
+	const updateUser = useCallback(
+		async (username: string) => {
+			await api.put<void>("user/update-user", { "username": username });
+			await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+		},
+		[queryClient]
+	)
 
 	return {
 		user,
@@ -107,7 +159,10 @@ export function useAuth() {
 		register,
 		logoutUser,
 		refetchUser: refetch,
-		requestPasswordReset,
+		sendPasswordResetCode,
 		confirmPasswordReset,
+		changePassword,
+		changeEmail,
+		updateUser,
 	};
 }

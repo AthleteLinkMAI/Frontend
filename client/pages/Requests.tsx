@@ -1,36 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { getTimeGreeting } from '@/components/TimeParse';
-import { useQuery } from "@tanstack/react-query";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 import RequestCard from "@/components/RequestCard";
-import { api } from "@/lib/apiClient";
-
-// Тип данных, приходящих с бэкенда (соответствует сериализатору)
-interface Request {
-	id: number;
-	eventName: string;
-	date: string;
-	sport: string;
-	applicationStatus: string;
-	personalResult: 'Win' | 'Loss' | '-' | string;
-	resultColor: "gray" | "black" | "green" | "red";
-}
+import { useActiveRequests } from "@/hooks/useActiveRequests";
 
 export default function Requests() {
 	const navigate = useNavigate();
-	const { user, isLoading } = useAuth();
-
-	// 1. Запрос к API за списком заявок
-	const { data: requests = [], isLoading: isRequestsLoading, error } = useQuery<Request[]>({
-		queryKey: ['requests'],
-		queryFn: async () => {
-			const data = await api.get<Request[]>("/api/request/");
-			return data;
-		}
-	});
+	const {
+		data: requests = [],
+		isLoading: isRequestsLoading,
+		error,
+	} = useActiveRequests();
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
@@ -39,14 +19,10 @@ export default function Requests() {
 
 				{/* Main Content */}
 				<div className="flex-1 p-7 overflow-y-auto">
-					<HeaderMenu
-						greeting={`${getTimeGreeting()}, ${user.full_name}`}
-						date={getCurrentDateFormatted()}
-					/>
+					<HeaderMenu />
 
 					{/* Requests Section */}
 					<div className="rounded-[10px] bg-[#DDD]/50 p-8 min-h-[800px] relative">
-
 						<h2 className="text-black text-[50px] font-light text-center mb-8">
 							Текущие заявки
 						</h2>
@@ -54,7 +30,7 @@ export default function Requests() {
 						{/* Loading / Error / Empty States */}
 						{isRequestsLoading && <p className="text-center text-xl">Загрузка...</p>}
 						{error && <p className="text-center text-red-600 text-xl">Ошибка загрузки данных</p>}
-						{!isRequestsLoading && requests.length === 0 && (
+						{!isRequestsLoading && !error && requests.length === 0 && (
 							<p className="text-center text-xl text-gray-700">У вас пока нет активных заявок.</p>
 						)}
 

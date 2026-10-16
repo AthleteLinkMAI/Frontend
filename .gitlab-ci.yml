@@ -1,0 +1,49 @@
+stages:
+  - build
+  - deploy
+
+.docker_template:
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker -v
+    - docker info
+    - docker login docker.io -u "$FRONTEND_LOGIN" -p "$FRONTEND_PASSWORD"
+
+build-job:
+  image: docker:27
+  stage: build
+  extends: .docker_template
+  script:
+    - docker build -t $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest .
+    - docker push $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest
+  only:
+    - main
+
+.deploy_template:
+  image: kroniak/ssh-client:latest
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - >-
+      echo -e "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile
+      /dev/null" > ~/.ssh/config
+    - chmod 600 ~/.ssh/id_ed25519
+
+deploy-job:
+  image: docker:27
+  stage: deploy
+  extends: .deploy_template
+  script:
+    - ssh -i ~/.ssh/id_ed25519 root@$SSH_REMOTE_HOST "
+      docker stop  athlete-link-frontend || true &&
+      docker rm    athlete-link-frontend || true &&
+      docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest &&
+      docker run -d --name athlete-link-frontend -p 8079:8080 $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME
+      "
+  only:
+    - main
+  when: manual

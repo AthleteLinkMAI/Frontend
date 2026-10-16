@@ -1,8 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { getTimeGreeting } from '@/components/TimeParse';
 import HeaderMenu from "@/components/HeaderMenu";
-import { getCurrentDateFormatted } from "@/lib/dateFormatter";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
 
 const OtherSportCard = ({ sport, index }) => {
@@ -55,6 +53,7 @@ export default function PublicProfile() {
         return <div className="min-h-screen bg-black text-white p-20 text-center">Загрузка профиля...</div>;
     }
 
+	//TODO: реанимировать эту страницу
     if (isError || !profileData.user_info) {
         console.log(profileData.user_info, isError)
         return <div className="min-h-screen bg-black text-red-500 p-20 text-center">Профиль пользователя не найден или ошибка загрузки.</div>;
@@ -78,8 +77,6 @@ export default function PublicProfile() {
         <div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
             <div className="p-7 pb-0">
                 <HeaderMenu
-                    greeting={`${getTimeGreeting()}, ${currentUser?.full_name}`}
-                    date={getCurrentDateFormatted()}
                     onProfileClick={() => navigate("/profile")}
                 />
             </div>

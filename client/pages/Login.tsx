@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/apiClient";
@@ -7,7 +6,8 @@ import { ApiError } from "@/lib/apiClient";
 
 export default function Login() {
 	const navigate = useNavigate();
-	const { login } = useAuth();
+	const { login, user } = useAuth();
+	const [justLoggedIn, setJustLoggedIn] = useState(false);
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -16,13 +16,19 @@ export default function Login() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	useEffect(() => {
+		if (justLoggedIn && user) {
+			navigate("/profile", { replace: true });
+		}
+	}, [justLoggedIn, user, navigate]);
+
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
 		setIsLoading(true);
 		try {
-			await login(email, password, rememberMe);
-			navigate("/profile");
+			await login(email, password);
+			setJustLoggedIn(true);
 		} catch (err) {
 			if (err instanceof ApiError) {
 				setError(err.body?.message || "Неверный email или пароль");

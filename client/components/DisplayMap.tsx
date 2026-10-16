@@ -1,82 +1,97 @@
-import {useEffect, useRef} from "react";
+import { useEffect, useRef } from "react";
+import { loadYmaps } from "@/lib/yandexMaps";
 
-interface DisplayMapProps{
-    latitude: number;
-    longitude: number;
-    address: string;
-    height?: string;
+interface DisplayMapProps {
+	latitude: number;
+	longitude: number;
+	address: string;
+	height?: string;
 }
 
 export default function DisplayMap({
-    latitude,
-    longitude,
-    address,
-    height="327px",
+	latitude,
+	longitude,
+	address,
+	height = "327px",
 }: DisplayMapProps) {
-    const APIkey = import.meta.env.VITE_API_KEY_YANDEX_MAP;
+	const mapContainer = useRef<HTMLDivElement>(null);
+	const mapInstance = useRef<any>(null);
+	const placemarkRef = useRef<any>(null);
 
-    const mapContainer = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		let cancelled = false;
 
-    const centerCoords: [number, number] = [latitude, longitude];
+		loadYmaps()
+			.then((ymaps) => {
+				if (cancelled || !mapContainer.current || mapInstance.current) return;
 
-    useEffect(() => {
-        const loadYandexMaps = () => {
-            if ((window as any).ymaps) {
-                (window as any).ymaps.ready(initializeMap);
-                return;
-            }
+				const map = new ymaps.Map(mapContainer.current, {
+					center: [latitude, longitude],
+					zoom: 17,
+					controls: ["zoomControl", "fullscreenControl"],
+				});
 
-            const script = document.createElement("script");
-            script.src = `https://api-maps.yandex.ru/2.1/?apikey=${APIkey}&lang=ru_RU`;
-            script.async = true;
-            script.onload = () => {
-                (window as any).ymaps.ready(initializeMap);
-            };
-            document.head.appendChild(script);
-        };
+				const placemark = new ymaps.Placemark(
+					[latitude, longitude],
+					{
+						balloonContentHeader: "Место события",
+						balloonContentBody: address,
+						balloonContentFooter: `Координаты: ${latitude}, ${longitude}`,
+					},
+					{ preset: "islands#blueDotIcon" }
+				);
 
-        const initializeMap = () => {
-            if(!mapContainer.current) return;
+				map.geoObjects.add(placemark);
+				placemark.balloon.open();
 
-            const ymaps = (window as any).ymaps;
+				mapInstance.current = map;
+				placemarkRef.current = placemark;
+			})
+			.catch((e) => console.error(e));
 
-            const map = new ymaps.Map(mapContainer.current, {
-                center: centerCoords,
-                zoom: 17,
-                controls: ["zoomControl", "fullscreenControl"],
-            });
+		return () => {
+			cancelled = true;
+			if (mapInstance.current) {
+				mapInstance.current.destroy();
+				mapInstance.current = null;
+			}
+			placemarkRef.current = null;
+		};
+	}, []);
 
-            const placemark = new ymaps.Placemark(
-                centerCoords,
-                {
-                    balloonContentHeader: "Место события",
-                    balloonContentBody: address,
-                    balloonContentFooter: `Координаты: ${latitude}, ${longitude}`,
-                },
-                {
-                    preset: "islands#blueDotIcon",
-                }
-            );
-            map.geoObjects.add(placemark);
-            placemark.balloon.open();
-        };
+	// обновление координат без пересоздания карты
+	useEffect(() => {
+		if (!mapInstance.current) return;
+		const ymaps = (window as any).ymaps;
+		if (!ymaps) return;
 
-        loadYandexMaps();
+		mapInstance.current.setCenter([latitude, longitude], 17, { duration: 200 });
 
-        return () => {
+		if (placemarkRef.current) {
+			placemarkRef.current.geometry.setCoordinates([latitude, longitude]);
+			placemarkRef.current.properties.set({
+				balloonContentBody: address,
+				balloonContentFooter: `Координаты: ${latitude}, ${longitude}`,
+			});
+		} else {
+			const placemark = new ymaps.Placemark(
+				[latitude, longitude],
+				{
+					balloonContentHeader: "Место события",
+					balloonContentBody: address,
+					balloonContentFooter: `Координаты: ${latitude}, ${longitude}`,
+				},
+				{ preset: "islands#blueDotIcon" }
+			);
+			mapInstance.current.geoObjects.add(placemark);
+			placemarkRef.current = placemark;
+		}
+	}, [latitude, longitude, address]);
 
-        };
-    }, [latitude, longitude, address]);
-
-    return (
-        <div
-            ref={mapContainer}
-            style={{
-                width: "100%",
-                height: height,
-                borderRadius: "40px",
-                overflow: "hidden",
-            }}
-        />
-    );
+	return (
+		<div
+			ref={mapContainer}
+			style={{ width: "100%", height, borderRadius: "40px", overflow: "hidden" }}
+		/>
+	);
 }
