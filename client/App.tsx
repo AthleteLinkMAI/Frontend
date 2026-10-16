@@ -40,24 +40,30 @@ export const App = () => (
 				<Routes>
 					{/* --- ПУБЛИЧНЫЕ МАРШРУТЫ (Доступны всем) --- */}
 					<Route path="/" element={<Index />} />
+
 					<Route path="/login" element={<Login />} />
 					<Route path="/register" element={<Register />} />
 					<Route path="/password-reset" element={<PasswordResetRequest />} />
 					<Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
-					<Route path="/profile" element={<AuthRedirect />} />
+					<Route path="/profile/:username" element={<AuthRedirect />} />
+
 					<Route path="/requests" element={<AllRequests />} />
+
+					<Route path="/authors" element={<Authors />} />
+
+					<Route path="/user/:userId" element={<PublicProfile />} />
+
 					{/* --- ПРИВАТНЫЕ МАРШРУТЫ (Только для авторизованных) --- */}
 					<Route element={<ProtectedRoute />}>
-						<Route path="/:username" element={<PublicProfile />} />
-						<Route path="/:username/authors" element={<ProfileOwnerGuard><Authors /></ProfileOwnerGuard>} />
-						<Route path="/:username/profile" element={<ProfileOwnerGuard><Profile /></ProfileOwnerGuard>} />
-						<Route path="/:username/stats" element={<ProfileOwnerGuard><ProfileStats /></ProfileOwnerGuard>} />
-						<Route path="/:username/requests" element={<ProfileOwnerGuard><Requests /></ProfileOwnerGuard>} />
-						<Route path="/:username/settings" element={<ProfileOwnerGuard><Settings /></ProfileOwnerGuard>} />
+						<Route path="/profile" element={<Profile />} />
+						<Route path="/stats" element={<ProfileStats />} />
+						<Route path="/my-requests" element={<Requests />} />
+						<Route path="/settings" element={<Settings />} />
 						<Route path="/requests/:id" element={<RequestData />} />
 						<Route path="/requests/create" element={<CreateRequest />} />
 						<Route path="/leaderboard" element={<Leaderboard />} />
 					</Route>
+
 					<Route path="*" element={<NotFound />} />
 				</Routes>
 			</BrowserRouter>

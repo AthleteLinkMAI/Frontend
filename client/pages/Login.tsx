@@ -11,7 +11,6 @@ export default function Login() {
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [rememberMe, setRememberMe] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -39,8 +38,6 @@ export default function Login() {
 			setIsLoading(false);
 		}
 	};
-
-
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] flex items-center justify-center px-4 py-8 relative overflow-hidden">
@@ -128,37 +125,6 @@ export default function Login() {
 						</div>
 
 						<Link to="/password-reset">Забыли пароль?</Link>
-
-						{/* Remember Me Checkbox */}
-						<div className="flex items-center gap-2">
-							<button
-								type="button"
-								onClick={() => setRememberMe(!rememberMe)}
-								className="w-[22px] h-[22px] border border-white flex items-center justify-center bg-transparent"
-							>
-								{rememberMe && (
-								<svg
-									width="13"
-									height="10"
-									viewBox="0 0 13 10"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-									d="M0.536133 3.79723L4.80542 8.16086L12.2767 0.524506"
-									stroke="white"
-									strokeWidth="1.5"
-									/>
-								</svg>
-								)}
-							</button>
-							<label
-								className="text-white text-[11px] underline cursor-pointer"
-								onClick={() => setRememberMe(!rememberMe)}
-							>
-								Запомнить меня
-							</label>
-						</div>
 
 						{/* Submit Button */}
 						<button
