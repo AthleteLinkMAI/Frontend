@@ -16,5 +16,6 @@ export default function ProtectedRoute() {
 	if (!user && !tokenStorage.getAccess()) {
 		return <Navigate to="/login" replace />;
 	}
+
 	return <Outlet />;
 }

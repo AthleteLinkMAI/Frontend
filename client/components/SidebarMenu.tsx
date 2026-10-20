@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------ */
 /*  Типы                                                                */
@@ -144,20 +145,20 @@ const AuthorsIcon = () => (
 /*  Описание навигации                                                  */
 /* ------------------------------------------------------------------ */
 
-const NAV_ITEMS = [
-  { key: "profile",  path: "/profile",      label: "Профиль",     icon: <ProfileIcon /> },
-  { key: "stats",    path: "/stats",        label: "Статистика",  icon: <StatsIcon /> },
-  { key: "authors",  path: "/authors",      label: "Авторы",      icon: <AuthorsIcon /> },
-  { key: "requests", path: "/my-requests",  label: "Мои заявки",  icon: <RequestsIcon /> },
-  { key: "settings", path: "/settings",     label: "Настройки",   icon: <SettingsIcon /> },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Компонент                                                           */
 /* ------------------------------------------------------------------ */
 
 export default function SidebarNav({ activePage }: SidebarNavProps) {
 	const navigate = useNavigate();
+
+	const NAV_ITEMS = [
+		{ key: "profile",  path: `/profile`,		label: "Профиль",     icon: <ProfileIcon /> },
+		// { key: "stats",    path: "/user",        	label: "Статистика",  icon: <StatsIcon /> },
+		{ key: "authors",  path: "/authors",      	label: "Авторы",      icon: <AuthorsIcon /> },
+		{ key: "requests", path: "/my-requests",  	label: "Мои заявки",  icon: <RequestsIcon /> },
+		{ key: "settings", path: "/settings",     	label: "Настройки",   icon: <SettingsIcon /> },
+	];
 
 	return (
 		<div className="w-[76px] border-r-2 border-[#5F5C5C] relative flex flex-col items-center pt-8 gap-12">

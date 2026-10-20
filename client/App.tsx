@@ -55,8 +55,8 @@ export const App = () => (
 
 					{/* --- ПРИВАТНЫЕ МАРШРУТЫ (Только для авторизованных) --- */}
 					<Route element={<ProtectedRoute />}>
+						{/* <Route path="/stats" element={<ProfileStats />} /> */}
 						<Route path="/profile" element={<Profile />} />
-						<Route path="/stats" element={<ProfileStats />} />
 						<Route path="/my-requests" element={<Requests />} />
 						<Route path="/settings" element={<Settings />} />
 						<Route path="/requests/:id" element={<RequestData />} />
