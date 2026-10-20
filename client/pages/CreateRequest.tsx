@@ -18,7 +18,7 @@ interface MapSelectionData {
 }
 
 interface Sport {
-	id: number,
+	id: string,
 	name: string,
 	minPlayers: number,
 	maxPlayers: number,
@@ -33,7 +33,7 @@ export default function CreateRequest() {
 
 	const [sports, setSports] = useState<Sport[]>([]);
 	const [playersCount, setPlayersCount] = useState("");
-	const [selectedSportId, setSelectedSportId] = useState<number | null>(null);
+	const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
 
 	useEffect(() => {
 		const fetchSports = async () => {
@@ -86,7 +86,7 @@ export default function CreateRequest() {
 	// ];
 
 	// --- Handlers ---
-	const handleSportSelect = (sportId: number) => {
+	const handleSportSelect = (sportId: string) => {
 		setSelectedSportId(sportId);
 		setShowSportDropdown(false);
 		setPlayersCount("");
@@ -188,7 +188,7 @@ export default function CreateRequest() {
 
 	const getSelectedSport = (): Sport | undefined => {
 		if (!selectedSportId) return undefined;
-		return sports.find(s => s.id === Number(selectedSportId));
+		return sports.find(s => s.id === selectedSportId);
 	};
 
 	const sportLimits = getSelectedSport();

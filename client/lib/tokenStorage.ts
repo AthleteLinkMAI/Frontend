@@ -1,5 +1,3 @@
-const ACCESS_KEY = "athletelink_access_token";
-
 let inMemoryAccess: string | null = null;
 
 export const tokenStorage = {
