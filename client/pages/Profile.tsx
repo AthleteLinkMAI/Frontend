@@ -1,31 +1,9 @@
-import { useParams } from "react-router-dom";
 import { usePublicProfile } from "@/hooks/usePublicProfile"
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
 import { useAuth } from "@/hooks/useAuth";
 import ProfileCard from "@/components/ProfileCard";
 
-
-// const SportIcon = ({ sport }: { sport: string }) => {
-// 	// Здесь можно добавить логику выбора иконки в зависимости от sport
-// 	return (
-// 		<div className="w-12 h-12 rounded-full bg-red-900 border-2 border-red-500 flex items-center justify-center shrink-0">
-// 			<span className="text-white text-xl">🏆</span>
-// 		</div>
-// 	);
-// };
-
-const ProgressBar = ({ current, max }: { current: number; max: number }) => {
-	const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-	return (
-		<div className="w-full bg-black/40 rounded-full h-2.5 mt-2 overflow-hidden">
-			<div
-				className="bg-white h-2.5 rounded-full"
-				style={{ width: `${percentage}%` }}
-			/>
-		</div>
-	);
-};
 
 export default function Profile() {
 	const { user } = useAuth();

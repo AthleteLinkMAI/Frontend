@@ -89,7 +89,7 @@ const RoundModal: React.FC<RoundModalProps> = ({
 							>
 								<span className="text-white text-base truncate">
 									{usernames[p.userId] ??
-										`Игрок ${p.userId.slice(0, 8)}`}
+										`Игрок ${p.userId}`}
 								</span>
 								<div className="flex gap-2">
 									<button

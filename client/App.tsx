@@ -24,6 +24,7 @@ import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import PasswordResetRequest from "./pages/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/PasswordResetConfirm";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -33,39 +34,40 @@ export const App = () => (
 			<Toaster />
 			<Sonner />
 			<BrowserRouter
-				future={{
-					v7_startTransition: true,
-					v7_relativeSplatPath: true,
-				}}>
-				<Routes>
-					{/* --- ПУБЛИЧНЫЕ МАРШРУТЫ (Доступны всем) --- */}
-					<Route path="/" element={<Index />} />
+			future={{
+				v7_startTransition: true,
+				v7_relativeSplatPath: true,
+			}}>
+				<ErrorBoundary>
+					<Routes>
+						{/* --- ПУБЛИЧНЫЕ МАРШРУТЫ (Доступны всем) --- */}
+						<Route path="/" element={<Index />} />
 
-					<Route path="/login" element={<Login />} />
-					<Route path="/register" element={<Register />} />
-					<Route path="/password-reset" element={<PasswordResetRequest />} />
-					<Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
-					<Route path="/profile/:username" element={<AuthRedirect />} />
+						<Route path="/login" element={<Login />} />
+						<Route path="/register" element={<Register />} />
+						<Route path="/password-reset" element={<PasswordResetRequest />} />
+						<Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
+						<Route path="/profile/:username" element={<AuthRedirect />} />
 
-					<Route path="/requests" element={<AllRequests />} />
+						<Route path="/authors" element={<Authors />} />
 
-					<Route path="/authors" element={<Authors />} />
+						<Route path="/user/:userId" element={<PublicProfile />} />
 
-					<Route path="/user/:userId" element={<PublicProfile />} />
+						{/* --- ПРИВАТНЫЕ МАРШРУТЫ (Только для авторизованных) --- */}
+						<Route element={<ProtectedRoute />}>
+							{/* <Route path="/stats" element={<ProfileStats />} /> */}
+							<Route path="/profile" element={<Profile />} />
+							<Route path="/my-requests" element={<Requests />} />
+							<Route path="/settings" element={<Settings />} />
+							<Route path="/requests" element={<AllRequests />} />
+							<Route path="/requests/:id" element={<RequestData />} />
+							<Route path="/requests/create" element={<CreateRequest />} />
+							<Route path="/leaderboard" element={<Leaderboard />} />
+						</Route>
 
-					{/* --- ПРИВАТНЫЕ МАРШРУТЫ (Только для авторизованных) --- */}
-					<Route element={<ProtectedRoute />}>
-						{/* <Route path="/stats" element={<ProfileStats />} /> */}
-						<Route path="/profile" element={<Profile />} />
-						<Route path="/my-requests" element={<Requests />} />
-						<Route path="/settings" element={<Settings />} />
-						<Route path="/requests/:id" element={<RequestData />} />
-						<Route path="/requests/create" element={<CreateRequest />} />
-						<Route path="/leaderboard" element={<Leaderboard />} />
-					</Route>
-
-					<Route path="*" element={<NotFound />} />
-				</Routes>
+						<Route path="*" element={<NotFound />} />
+					</Routes>
+				</ErrorBoundary>
 			</BrowserRouter>
 		</TooltipProvider>
 	</QueryClientProvider>
