@@ -1,8 +1,7 @@
-import { string, unknown } from "zod/v4";
 import { tokenStorage } from "./tokenStorage";
 
 
-const API_URL = import.meta.env.VITE_API_URL || "https://localhost:8079";
+const API_URL = import.meta.env.VITE_API_URL || "https://localhost:8080";
 const API_PREFIX = "api/v1"
 
 let refreshPromise: Promise<string | null> | null = null;
@@ -34,15 +33,15 @@ function parseApiError(status: number, body: any) {
 
 function defaultMessage(status: number) {
 	switch (status) {
-		case 400: "Invalid request";
-		case 401: "Authorization required";
-		case 403: "No access"
-		case 404: "Not found"
-		case 409: "Status conflict"
-		case 502: "Service unavailable"
-		case 503: "Service overloaded"
-		case 504: "Service timeout"
-		default: `Error: ${status}`
+		case 400: return "Invalid request";
+		case 401: return "Authorization required";
+		case 403: return "No access"
+		case 404: return "Not found"
+		case 409: return "Status conflict"
+		case 502: return "Service unavailable"
+		case 503: return "Service overloaded"
+		case 504: return "Service timeout"
+		default: return `Error: ${status}`
 	}
 }
 
@@ -126,7 +125,7 @@ export async function apiRequest<T = unknown>(
             response = await doFetch(newToken);
         } else {
             window.dispatchEvent(new Event("auth:logout"));
-            throw parseApiError(401, {
+            parseApiError(401, {
                 code: "UNATHORIZATION",
                 message: "The session has ended.",
             });
@@ -147,7 +146,7 @@ export async function apiRequest<T = unknown>(
     const parsed = isJson && raw ? JSON.parse(raw) : raw;
 
     if (!response.ok) {
-        throw parseApiError(response.status, parsed);
+        parseApiError(response.status, parsed);
     }
 	// console.log("Succes api:", path);
     return parsed as T;

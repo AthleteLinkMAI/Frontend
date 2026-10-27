@@ -1,16 +1,39 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
 import RequestCard from "@/components/RequestCard";
-import { useActiveRequests } from "@/hooks/useActiveRequests";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRequests } from "@/hooks/useUserRequests";
 
 export default function Requests() {
 	const navigate = useNavigate();
+	const { user } = useAuth();
+	const [page, setPage] = useState(0);
+
+	// Запрашиваем заявки текущего пользователя
 	const {
-		data: requests = [],
+		data,
 		isLoading: isRequestsLoading,
 		error,
-	} = useActiveRequests();
+		isFetching,
+	} = useUserRequests({
+		userId: user?.id,
+		page,
+		forOrganizer: false, // false — все заявки, где участвует пользователь
+	});
+
+	const requests = data?.content ?? [];
+	const totalPages = data?.page?.totalPages ?? 0;
+	const totalElements = data?.page?.totalElements ?? 0;
+
+	const handlePrev = () => {
+		if (page > 0) setPage((p) => p - 1);
+	};
+
+	const handleNext = () => {
+		if (page < totalPages - 1) setPage((p) => p + 1);
+	};
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
@@ -23,23 +46,64 @@ export default function Requests() {
 
 					{/* Requests Section */}
 					<div className="rounded-[10px] bg-[#DDD]/50 p-8 min-h-[800px] relative">
-						<h2 className="text-black text-[50px] font-light text-center mb-8">
-							Текущие заявки
+						<h2 className="text-black text-[50px] font-light text-center mb-2">
+							Мои заявки
 						</h2>
+						{totalElements > 0 && (
+							<p className="text-center text-gray-600 mb-8">
+								Всего: {totalElements}
+							</p>
+						)}
+						{totalElements === 0 && <div className="mb-8" />}
 
 						{/* Loading / Error / Empty States */}
-						{isRequestsLoading && <p className="text-center text-xl">Загрузка...</p>}
-						{error && <p className="text-center text-red-600 text-xl">Ошибка загрузки данных</p>}
+						{isRequestsLoading && (
+							<p className="text-center text-xl">Загрузка...</p>
+						)}
+						{error && (
+							<p className="text-center text-red-600 text-xl">
+								Ошибка загрузки данных
+							</p>
+						)}
 						{!isRequestsLoading && !error && requests.length === 0 && (
-							<p className="text-center text-xl text-gray-700">У вас пока нет активных заявок.</p>
+							<p className="text-center text-xl text-gray-700">
+								У вас пока нет заявок.
+							</p>
 						)}
 
 						{/* Requests List */}
-						<div className="space-y-5 mb-8">
+						<div
+							className={`space-y-5 mb-8 transition-opacity ${
+								isFetching ? "opacity-50" : "opacity-100"
+							}`}
+						>
 							{requests.map((request) => (
 								<RequestCard key={request.id} request={request} />
 							))}
 						</div>
+
+						{/* Пагинация */}
+						{totalPages > 1 && (
+							<div className="flex items-center justify-center gap-4 mb-8">
+								<button
+									onClick={handlePrev}
+									disabled={page === 0 || isFetching}
+									className="px-5 py-2 rounded-lg bg-[#4182F9] text-white text-base disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3571e8] transition-colors"
+								>
+									Назад
+								</button>
+								<span className="text-black/70 text-base">
+									Страница {page + 1} из {totalPages}
+								</span>
+								<button
+									onClick={handleNext}
+									disabled={page >= totalPages - 1 || isFetching}
+									className="px-5 py-2 rounded-lg bg-[#4182F9] text-white text-base disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3571e8] transition-colors"
+								>
+									Вперёд
+								</button>
+							</div>
+						)}
 
 						{/* --- КНОПКА "СОЗДАТЬ СВОЮ" --- */}
 						<div className="flex justify-center mt-12">
