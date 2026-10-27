@@ -1,10 +1,9 @@
-// hooks/useActiveRequests.ts
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/apiClient";
-import { useAuth } from "./useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface RequestItem {
-	id: number;
+	id: string;
 	title: string;
 	sportName: string;
 	maxPlayers: number;
@@ -15,11 +14,24 @@ export interface RequestItem {
 	registrationOpen: boolean;
 	latitude: number;
 	longitude: number;
+	status?: string;
+}
+
+interface PagedResponse<T> {
+	content: T[];
+	page?: {
+		size: number;
+		number: number;
+		totalElements: number;
+		totalPages: number;
+	};
 }
 
 function getPosition(): Promise<GeolocationPosition | null> {
 	return new Promise((resolve) => {
-		if (!navigator.geolocation) return resolve(null);
+		if (typeof navigator === "undefined" || !navigator.geolocation) {
+			return resolve(null);
+		}
 		navigator.geolocation.getCurrentPosition(
 			(pos) => resolve(pos),
 			() => resolve(null),
@@ -32,10 +44,29 @@ function toIsoNoMs(date: Date): string {
 	return date.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
+function normalizeRequests(data: unknown): RequestItem[] {
+	if (!data) return [];
+	if (Array.isArray(data)) return data as RequestItem[];
+	if (typeof data === "object" && "content" in data) {
+		const content = (data as PagedResponse<RequestItem>).content;
+		return Array.isArray(content) ? content : [];
+	}
+	return [];
+}
+
 async function fetchActiveRequests(): Promise<RequestItem[]> {
-	const geo = await getPosition();
-	const latitude = geo?.coords.latitude ?? 0;
-	const longitude = geo?.coords.longitude ?? 0;
+	let latitude = 0;
+	let longitude = 0;
+
+	try {
+		const geo = await getPosition();
+		if (geo) {
+			latitude = geo.coords.latitude;
+			longitude = geo.coords.longitude;
+		}
+	} catch {
+		// игнорируем — работаем без геолокации
+	}
 
 	const params = new URLSearchParams({
 		lat: String(latitude),
@@ -45,19 +76,18 @@ async function fetchActiveRequests(): Promise<RequestItem[]> {
 		endDate: toIsoNoMs(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)),
 	});
 
-	// TODO: доделать у бека — сейчас координаты часто 0,0, если нет разрешения
-	const data = await api.get<RequestItem[]>(`requests?${params.toString()}`);
-	console.log(data);
-	return data;
+	const data = await api.get<unknown>(`requests?${params.toString()}`);
+	return normalizeRequests(data);
 }
 
 export function useActiveRequests() {
-	const { user } = useAuth();
-	
+	const { user, isLoading: isAuthLoading } = useAuth();
+
 	return useQuery({
 		queryKey: ["requests", "active"],
 		queryFn: fetchActiveRequests,
-		enabled: !!user,
+		enabled: !isAuthLoading && !!user,
 		staleTime: 30_000,
+		retry: false,
 	});
 }

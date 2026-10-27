@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 interface RequestCardProps {
 	request: {
-		id: number;
+		id: string;
 		title: string;
 		sportName: string;
 		maxPlayers: number;
@@ -19,7 +19,7 @@ interface RequestCardProps {
 export default function RequestCard({ request }: RequestCardProps) {
 	const navigate = useNavigate();
 
-	const handleRequestClick = (id: number) => {
+	const handleRequestClick = (id: string) => {
 		navigate(`/requests/${id}`);
 	};
 

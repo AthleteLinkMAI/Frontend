@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function Authors() {
 	return (
