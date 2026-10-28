@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError, refreshAccessToken } from "@/lib/apiClient";
@@ -78,23 +78,23 @@ export function useAuth() {
 	const navigate = useNavigate();
 
 	//MOCK
-	// const user = {
-	// 		id: "Azaza_id",
-	// 		nickname: "Azaza",
-	// 		name: "Олег",
-	// 		surname: "Тинькоф",
-	// 		email: "oleg@mail,com",
-	// 		isVerified: true,
-	// 		age: 23,
-	// 		birthdate: "2026-10-27",
-	// 	};
+	const user = {
+			id: "Azaza_id",
+			nickname: "Azaza",
+			name: "Олег",
+			surname: "Тинькоф",
+			email: "oleg@mail,com",
+			isVerified: true,
+			age: 23,
+			birthdate: "2026-10-27",
+		};
 
-	const { data: user, isLoading, refetch } = useQuery({
-		queryKey: ["auth-user"],
-		queryFn: fetchMe,
-		retry: false,
-		staleTime: 1000 * 60 * 5,
-	});
+	// const { data: user, isLoading, refetch } = useQuery({
+	// 	queryKey: ["auth-user"],
+	// 	queryFn: fetchMe,
+	// 	retry: false,
+	// 	staleTime: 1000 * 60 * 5,
+	// });
 
 	//Выход при 401
 	useEffect(() => {
@@ -228,34 +228,35 @@ export function useAuth() {
 		navigate("/", { replace: true });
 	}, [queryClient, navigate]);
 
-	return {
-		user,
-		isLoading,
-		isAuth: !!user,
-		login,
-		register,
-		logoutUser,
-		refetchUser: refetch,
-		sendPasswordResetCode,
-		confirmPasswordReset,
-		changePassword,
-		changeEmail,
-		updateUser,
-		deleteUser
-	};
 	// return {
 	// 	user,
-	// 	isLoading: false,
+	// 	isLoading,
 	// 	isAuth: !!user,
-	// 	login: (data: any) => {console.log("login:", data)},
-	// 	register: (data: any) => {console.log("register:", data)},
-	// 	logoutUser: () => {console.log("logout")},
-	// 	refetchUser: (data: any) => {console.log("refetch:", data)},
-	// 	sendPasswordResetCode: (data: any) => {console.log("sendPasswordResetCode:", data)},
-	// 	confirmPasswordReset: (data: any) => {console.log("confirmPasswordReset:", data)},
-	// 	changePassword: (...data: any) => {console.log("changePassword:", data)},
-	// 	changeEmail: (data: any) => {console.log("changeEmail:", data)},
-	// 	updateUser: (...data: any) => {console.log("updateUser:", data)},
-	// 	deleteUser: () => {console.log("deleteUser: null")},
+	// 	login,
+	// 	register,
+	// 	logoutUser,
+	// 	refetchUser: refetch,
+	// 	sendPasswordResetCode,
+	// 	confirmPasswordReset,
+	// 	changePassword,
+	// 	changeEmail,
+	// 	updateUser,
+	// 	deleteUser
 	// };
+	
+	return {
+		user,
+		isLoading: false,
+		isAuth: !!user,
+		login: (data: any) => {console.log("login:", data)},
+		register: (data: any) => {console.log("register:", data)},
+		logoutUser: () => {console.log("logout")},
+		refetchUser: (data: any) => {console.log("refetch:", data)},
+		sendPasswordResetCode: (data: any) => {console.log("sendPasswordResetCode:", data)},
+		confirmPasswordReset: (data: any) => {console.log("confirmPasswordReset:", data)},
+		changePassword: (...data: any) => {console.log("changePassword:", data)},
+		changeEmail: (data: any) => {console.log("changeEmail:", data)},
+		updateUser: (...data: any) => {console.log("updateUser:", data)},
+		deleteUser: () => {console.log("deleteUser: null")},
+	};
 }

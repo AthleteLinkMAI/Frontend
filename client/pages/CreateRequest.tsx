@@ -11,6 +11,7 @@ import {
 import YandexMap from "@/components/YandexMap";
 import { api, ApiError } from "@/lib/apiClient";
 import { useSports, type Sport } from "@/hooks/useSports";
+import { TimePicker } from "@/components/ui/TimePicker";
 
 interface MapSelectionData {
 	address: string;
@@ -96,6 +97,39 @@ export default function CreateRequest() {
 		return null;
 	};
 
+	const formatTimeInput = (raw: string): string => {
+		const digits = raw.replace(/\D/g, "").slice(0, 4);
+
+		if (digits.length === 0) return "";
+
+		// Часы
+		let hours = digits.slice(0, 2);
+		if (hours.length === 2) {
+			const h = Math.min(23, Number(hours));
+			hours = String(h).padStart(2, "0");
+		} else if (hours.length === 1) {
+			if (Number(hours) > 2) hours = "0" + hours;
+		}
+
+		if (digits.length <= 2) {
+			return digits.length === 2 ? `${hours}:` : hours;
+		}
+
+		let minutes = digits.slice(2, 4);
+		if (minutes.length === 2) {
+			const m = Math.min(59, Number(minutes));
+			minutes = String(m).padStart(2, "0");
+		} else if (minutes.length === 1) {
+			if (Number(minutes) > 5) minutes = "0" + minutes;
+		}
+
+		return `${hours}:${minutes}`;
+	}
+
+	const isValidTime = (value: string): boolean => {
+		return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+	}
+
 	const handleDateInputChange = (input: string) => {
 		setDateInput(input);
 		const parsed = parseDateFromInput(input);
@@ -115,6 +149,11 @@ export default function CreateRequest() {
 		
 		if (!title || !selectedSportId || !playersCount || !dateInput || !time || !formData.location) {
 			alert("Пожалуйста, заполните все обязательные поля.");
+			return;
+		}
+
+		if (!isValidTime(time)) {
+			alert("Введите корректное время в формате ЧЧ:ММ (00:00–23:59).");
 			return;
 		}
 
@@ -255,7 +294,6 @@ export default function CreateRequest() {
 										)}
 									</div>
 
-									{/* 🔑 Рендерим поле, только если sportLimits существует (т.е. спорт выбран) */}
 									{sportLimits && ( 
 										<div className="mt-4">
 											<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
@@ -301,7 +339,6 @@ export default function CreateRequest() {
 													placeholder="ДД.ММ.ГГГГ"
 													className="w-full h-[40px] border border-black rounded mb-2 px-2 text-black"
 												/>
-												{/* @ts-ignore */}
 												<Calendar selected={date} onSelect={handleCalendarSelect} mode="single" />
 											</div>
 										</PopoverContent>
@@ -313,13 +350,7 @@ export default function CreateRequest() {
 									<label className="block text-white text-[32px] font-normal mb-2 opacity-80">
 										Время
 									</label>
-									<input
-										type="text"
-										value={time}
-										onChange={(e) => setTime(e.target.value)}
-										placeholder="ЧЧ:ММ"
-										className="w-full h-[68px] rounded-[15px] bg-[#F9F9F9]/50 px-5 text-[28px] text-black placeholder:text-black/40 outline-none"
-									/>
+									<TimePicker value={time} onChange={setTime} minuteStep={5} />
 								</div>
 
 							</div>
