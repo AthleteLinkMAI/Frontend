@@ -47,7 +47,7 @@ export default function ProfileStats() {
 						{!isLoading && !error && stats && (
 							<StatsContent
 								stats={stats}
-								username={user?.username}
+								nickname={user?.nickname}
 								onOpenPublicProfile={() =>
 									navigate(`/user/${user?.id}`)
 								}
@@ -62,13 +62,13 @@ export default function ProfileStats() {
 
 interface StatsContentProps {
 	stats: PlayerStatsDto;
-	username?: string;
+	nickname?: string;
 	onOpenPublicProfile: () => void;
 }
 
 function StatsContent({
 	stats,
-	username,
+	nickname,
 	onOpenPublicProfile,
 }: StatsContentProps) {
 	const {
@@ -110,7 +110,7 @@ function StatsContent({
 						Сейчас в рейтинге Вы выглядите так:
 					</p>
 
-					<ProfilePreviewCard stats={stats} username={username} />
+					<ProfilePreviewCard stats={stats} nickname={nickname} />
 
 					<BouncingCat />
 

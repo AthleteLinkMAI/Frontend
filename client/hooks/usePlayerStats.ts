@@ -6,7 +6,7 @@ import type { PlayerStatsDto } from "@/types/playerStats";
 export function usePlayerStats() {
 	const { user } = useAuth();
 	return useQuery({
-		queryKey: ["player-stats", user?.username],
+		queryKey: ["player-stats", user?.nickname],
 		queryFn: () => api.get<PlayerStatsDto>(`players/${user.id}`),
 		enabled: !!user,
 		staleTime: 60_000,

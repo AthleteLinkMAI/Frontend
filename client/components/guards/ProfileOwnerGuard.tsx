@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 
 const ProfileOwnerGuard = ({ children }) => {
-    const { username } = useParams();
+    const { nickname } = useParams();
     const { user, isLoading } = useAuth();
 	// console.log("guard check", user);
     if(isLoading){
@@ -11,11 +11,11 @@ const ProfileOwnerGuard = ({ children }) => {
     }
     if(!user){
         console.log('Сюды нельзя');
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/register" replace />;
     }
-    if(user.username !== username) {
+    if(user.nickname !== nickname) {
         console.log('Низя');
-        return <Navigate to={`/${username}/`} replace />;
+        return <Navigate to={`/${nickname}/`} replace />;
     }
     return <>{children}</>;
 }

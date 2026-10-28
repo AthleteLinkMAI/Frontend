@@ -1,72 +1,15 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
-import { useLeaderboard, type Sport, type LeaderboardEntry, useSports } from "@/hooks/useLeaderboard";
-
-
-// interface Sport {
-// 	id: number;
-// 	name: string;
-// 	minPlayers: number;
-// 	maxPlayers: number;
-// 	iconUrl: string | number;
-// }
-
-// interface RankInfo {
-// 	name: string;
-// 	scoreMin: number;
-// 	scoreMax: number;
-// }
-
-// interface LeaderboardEntry {
-// 	place: number;
-// 	userId: string;
-// 	username: string;
-// 	score: number;
-// 	wins: number;
-// 	losses: number;
-// 	draws: number;
-// 	rank: RankInfo;
-// }
-
-
-// const MOCK_SPORTS: Sport[] = [
-// 	{ id: 1, name: "Литрбол", minPlayers: 2, maxPlayers: 10, iconUrl: 1 },
-// 	{ id: 2, name: "Шахматы", minPlayers: 2, maxPlayers: 2, iconUrl: 2 },
-// 	{ id: 3, name: "Футбол", minPlayers: 10, maxPlayers: 22, iconUrl: 3 },
-// 	{ id: 4, name: "Баскетбол", minPlayers: 6, maxPlayers: 12, iconUrl: 4 },
-// ];
-
-// const generateMockPlayers = (sportId: number, page: number, count: number): LeaderboardEntry[] => {
-// 	if (page > 3) return [];
-
-// 	return Array.from({ length: count }).map((_, i) => {
-// 		const globalIndex = (page - 1) * count + i + 1;
-// 		return {
-// 			place: globalIndex,
-// 			userId: `user-${sportId}-${globalIndex}`,
-// 			username: `Игрок_${sportId}_${globalIndex}`,
-// 			score: 1500 - globalIndex * 10,
-// 			wins: 10 + i,
-// 			losses: 2 + i,
-// 			draws: i,
-// 			rank: {
-// 				name: globalIndex <= 5 ? "GOLD" : globalIndex <= 15 ? "SILVER" : "BRONZE",
-// 				scoreMin: 1000,
-// 				scoreMax: 2000,
-// 			},
-// 		};
-// 	});
-// };
-
-// const PAGE_SIZE = 15;
+import { useLeaderboard, type LeaderboardEntry } from "@/hooks/useLeaderboard";
+import { useSports } from "@/hooks/useSports";
 
 
 export default function Leaderboard() {
 	const navigate = useNavigate();
 
 	const { data: sports = [], isLoading: isSportsLoading } = useSports();
-	const [selectedSportId, setSelectedSportId] = useState<number | null>(null);
+	const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
 	const [showSportDropdown, setShowSportDropdown] = useState(false);
 
 	const sportDropdownRef = useRef<HTMLDivElement>(null);
@@ -201,12 +144,12 @@ export default function Leaderboard() {
 
 									<div className="flex-1 flex items-center gap-4 h-[78px] rounded-[20px] border-[1.5px] border-black bg-gradient-to-r from-[#4F0A0A] to-[#780000] px-4">
 										<div className="w-[40px] h-[36px] rounded-full flex-shrink-0 bg-[#5A0A0A] flex items-center justify-center text-white font-bold">
-											{player.username?.[0] ?? "?"}
+											{player.nickname?.[0] ?? "?"}
 										</div>
 
 										<div className="min-w-[141px]">
 											<p className="text-white text-[14px] font-bold leading-tight [text-shadow:_1px_1px_0_rgb(0_0_0)]">
-												{player.username}
+												{player.nickname}
 											</p>
 										</div>
 
