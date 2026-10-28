@@ -12,30 +12,7 @@ export interface Sport {
 export function useSports() {
 	return useQuery({
 		queryKey: ["sports"],
-		// queryFn: () => api.get<Sport[]>("sports"),
-		queryFn: () => [
-			{
-				id: "1",
-				name: "Шахматы",
-				minPlayers: 2,
-				maxPlayers: 2,
-				iconUrl: "check",
-			},
-			{
-				id: "2",
-				name: "Литрбол",
-				minPlayers: 2,
-				maxPlayers: 10,
-				iconUrl: "beer",
-			},
-			{
-				id: "3",
-				name: "Футбол",
-				minPlayers: 12,
-				maxPlayers: 22,
-				iconUrl: "ball",
-			},
-		],
+		queryFn: () => api.get<Sport[]>("sports"),
 		staleTime: 1000 * 60 * 10,
 	});
 }
