@@ -10,8 +10,8 @@ export default function AuthRedirect() {
         if (isLoading) {
             return; 
         }
-        if (isAuth && user && user.username) {
-            navigate(`/${user.username}/profile`, { replace: true }); 
+        if (isAuth && user && user.nickname) {
+            navigate(`/${user.nickname}/profile`, { replace: true }); 
         } 
         else {
             navigate('/login', { replace: true });

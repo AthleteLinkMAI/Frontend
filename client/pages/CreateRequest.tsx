@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import YandexMap from "@/components/YandexMap";
 import { api, ApiError } from "@/lib/apiClient";
+import { useSports, type Sport } from "@/hooks/useSports";
 
 interface MapSelectionData {
 	address: string;
@@ -17,35 +18,20 @@ interface MapSelectionData {
 	longitude: number;
 }
 
-interface Sport {
-	id: string,
-	name: string,
-	minPlayers: number,
-	maxPlayers: number,
-	iconUrl: number,
-}
-
 export default function CreateRequest() {
 	const navigate = useNavigate();
 	const { user, isLoading } = useAuth();
-  
-	// --- State ---
 
-	const [sports, setSports] = useState<Sport[]>([]);
+	// --- Виды спорта ---
+	const {
+		data: sports = [],
+		isLoading: isSportsLoading,
+		isError: isSportsError,
+	} = useSports();
+
+	// --- State ---
 	const [playersCount, setPlayersCount] = useState("");
 	const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
-
-	useEffect(() => {
-		const fetchSports = async () => {
-			try {
-				const data = await api.get<Sport[]>("sports");
-				setSports(data);
-			} catch (error) {
-				console.error("Network error:", error);
-			}
-		};
-		fetchSports();
-	}, []);
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -53,12 +39,11 @@ export default function CreateRequest() {
 				setShowSportDropdown(false);
 			}
 		};
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
 	const [title, setTitle] = useState("");
-	const [numberOfPlayers, setNumberOfPlayers] = useState("");
 	const [date, setDate] = useState<Date | undefined>(undefined);
 	const [dateInput, setDateInput] = useState("");
 	const [time, setTime] = useState("");
@@ -78,25 +63,6 @@ export default function CreateRequest() {
 
 	const sportDropdownRef = useRef<HTMLDivElement>(null);
 	const locationDropdownRef = useRef<HTMLDivElement>(null);
-
-	// const locationSuggestions = [
-	// 	"г. Москва, ул. 1-я Лагерная, д. 1",
-	// 	"г. Москва, Московский авиационный институт",
-	// 	"г. Москва, ул. Ленина, д. 10",
-	// ];
-
-	// --- Handlers ---
-	const handleSportSelect = (sportId: string) => {
-		setSelectedSportId(sportId);
-		setShowSportDropdown(false);
-		setPlayersCount("");
-	};
-
-	const handlePlayerCountChange = (val: string) => {
-		if (val === "" || /^\d+$/.test(val)) {
-			setNumberOfPlayers(val);
-		}
-	};
 
 	const handleMapSelect = (data: MapSelectionData) => {
 		setFormData(prev => ({
@@ -173,7 +139,8 @@ export default function CreateRequest() {
 
 		try {
 			await api.post<{detail?: string}>("requests", payload);
-			navigate(`/${user.username}/requests/`);
+			if (!user) return;
+			navigate(`/${user.nickname}/requests/`);
 		} catch (error) {
 			console.error(error);
 			if (error instanceof ApiError) {
@@ -263,20 +230,26 @@ export default function CreateRequest() {
 														key={sportOption.id}
 														type="button"
 														onClick={() => {
-															// 🔑 Устанавливаем только ID
-															setSelectedSportId(sportOption.id); 
+															setSelectedSportId(sportOption.id);
 															setShowSportDropdown(false);
-															setPlayersCount(''); 
+															setPlayersCount("");
 														}}
 														className="w-full px-5 py-3 text-left text-white text-[20px] font-light hover:bg-[#3a3a3a] border-b border-white/20"
 													>
 														{sportOption.name}
 													</button>
 												))}
-												{sports.length === 0 && (
-													<div className="w-full px-5 py-3 text-white/50 text-center">
-														Загрузка... или Список пуст.
+
+												{isSportsLoading && (
+													<div className="w-full px-5 py-3 text-white/50 text-center">Загрузка...</div>
+												)}
+												{isSportsError && (
+													<div className="w-full px-5 py-3 text-red-400 text-center">
+														Не удалось загрузить виды спорта
 													</div>
+												)}
+												{!isSportsLoading && !isSportsError && sports.length === 0 && (
+													<div className="w-full px-5 py-3 text-white/50 text-center">Список пуст.</div>
 												)}
 											</div>
 										)}
@@ -427,7 +400,7 @@ export default function CreateRequest() {
 										disabled={isEventLoading}
 										className="w-full h-[68px] bg-[#4182F9] rounded-[25px] text-white text-[24px] font-normal shadow-lg hover:bg-[#3571e8] transition-all active:scale-95 disabled:opacity-70"
 									>
-										{isLoading ? "Создание..." : "Создать игру"}
+										{isEventLoading ? "Создание..." : "Создать игру"}
 									</button>
 								</div>
 							</div>

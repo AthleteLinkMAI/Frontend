@@ -3,10 +3,10 @@ import { RANK_STYLES, detectTierFromImage } from "@/lib/profileStats";
 
 interface Props {
 	stats: PlayerStatsDto;
-	username?: string;
+	nickname?: string;
 }
 
-export default function ProfilePreviewCard({ stats, username }: Props) {
+export default function ProfilePreviewCard({ stats, nickname }: Props) {
 	const tier = detectTierFromImage(stats.best_sport_card?.rank_info?.rank_image);
 	const style = RANK_STYLES[tier];
 
@@ -26,7 +26,7 @@ export default function ProfilePreviewCard({ stats, username }: Props) {
 
 				<div className="flex-1">
 					<h4 className="text-white text-base font-bold flex items-center gap-2">
-						{username || "Неизвестный"}
+						{nickname || "Неизвестный"}
 						{stats.best_sport_icon_url && (
 							<img
 								src={stats.best_sport_icon_url}

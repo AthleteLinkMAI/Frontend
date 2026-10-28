@@ -2,7 +2,7 @@ import { api } from "./apiClient";
 
 export interface Usernames {
 	id: string;
-	username: string;
+	nickname: string;
 }
 
 export async function resolveUsernames(
@@ -12,5 +12,5 @@ export async function resolveUsernames(
 	const params = `userIds=${ids.join(",")}`
 	console.log(`Params = ${params} from ${ids}`)
 	const data = await api.get<Usernames[]>(`user?${params},`);
-	return Object.fromEntries(data.map((u) => [u.id, u.username]));
+	return Object.fromEntries(data.map((u) => [u.id, u.nickname]));
 }

@@ -1,14 +1,6 @@
 import { api } from "@/lib/apiClient";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
-
-export interface Sport {
-	id: number;
-	name: string;
-	minPlayers: number;
-	maxPlayers: number;
-	iconUrl: string | number;
-}
 
 export interface RankInfo {
 	name: string;
@@ -19,7 +11,7 @@ export interface RankInfo {
 export interface LeaderboardEntry {
 	place: number;
 	userId: string;
-	username: string;
+	nickname: string;
 	score: number;
 	wins: number;
 	losses: number;
@@ -27,17 +19,9 @@ export interface LeaderboardEntry {
 	rank: RankInfo;
 }
 
-export function useSports() {
-	return useQuery({
-		queryKey: ["sports"],
-		queryFn: () => api.get<Sport[]>("sports"),
-		staleTime: 1000 * 60 * 10,
-	});
-}
-
 const PAGE_SIZE = 20;
 
-export function useLeaderboard(sportId: number | null) {
+export function useLeaderboard(sportId: string | null) {
 	return useInfiniteQuery({
 		queryKey: ["leaderboard", sportId],
 		queryFn: async ({ pageParam = 1 }) => {
