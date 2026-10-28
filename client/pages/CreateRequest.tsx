@@ -177,7 +177,7 @@ export default function CreateRequest() {
 		try {
 			await api.post<{detail?: string}>("requests", payload);
 			if (!user) return;
-			navigate(`/${user.nickname}/requests/`);
+			navigate(`requests`);
 		} catch (error) {
 			console.error(error);
 			if (error instanceof ApiError) {
