@@ -15,22 +15,20 @@ import { TimePicker } from "@/components/ui/TimePicker";
 
 interface MapSelectionData {
 	address: string;
-	latitude: number;	
+	latitude: number;
 	longitude: number;
 }
 
 export default function CreateRequest() {
 	const navigate = useNavigate();
-	const { user, isLoading } = useAuth();
+	const { user } = useAuth();
 
-	// --- Виды спорта ---
 	const {
 		data: sports = [],
 		isLoading: isSportsLoading,
 		isError: isSportsError,
 	} = useSports();
 
-	// --- State ---
 	const [playersCount, setPlayersCount] = useState("");
 	const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
 
