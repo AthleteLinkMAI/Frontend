@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/apiClient";
 
 export interface UserRequestItem {
@@ -29,7 +29,6 @@ interface PagedModel<T> {
 interface UseUserRequestsParams {
 	userId: string | undefined;
 	statuses?: string[];
-	page?: number;
 	forOrganizer?: boolean;
 	enabled?: boolean;
 }
@@ -68,25 +67,30 @@ function normalize(data: unknown): PagedModel<UserRequestItem> {
 export function useUserRequests({
 	userId,
 	statuses,
-	page = 0,
 	forOrganizer = true,
 	enabled = true,
 }: UseUserRequestsParams) {
-	return useQuery({
-		queryKey: ["user-requests", userId, { statuses, page, forOrganizer }],
-		queryFn: async (): Promise<PagedModel<UserRequestItem>> => {
+	return useInfiniteQuery({
+		queryKey: ["user-requests", userId, { statuses, forOrganizer }],
+		initialPageParam: 0,
+		queryFn: async ({ pageParam }): Promise<PagedModel<UserRequestItem>> => {
 			if (!userId) return { content: [], page: EMPTY_PAGE };
 
 			const params = new URLSearchParams();
-			params.set("page", String(page));
+			params.set("page", String(pageParam));
 			params.set("forOrganizer", String(forOrganizer));
 			statuses?.forEach((status) => params.append("statuses", status));
 
 			const data = await api.get<unknown>(
-				`users/${userId}/requests?${params.toString()}`
+				`requests/users/${userId}?${params.toString()}`
 			);
 
 			return normalize(data);
+		},
+		// есть ли следующая страница
+		getNextPageParam: (lastPage) => {
+			const { number, totalPages } = lastPage.page;
+			return number + 1 < totalPages ? number + 1 : undefined;
 		},
 		enabled: !!userId && enabled,
 		staleTime: 30_000,
