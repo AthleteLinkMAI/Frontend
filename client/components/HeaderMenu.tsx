@@ -26,9 +26,11 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 		? userRequestsData.content
 		: [];
 
-	const greeting = user?.username
-		? `${getTimeGreeting()}, ${user.username}`
-		: getTimeGreeting();
+	const greeting = user?.surname && user?.name
+		? `${getTimeGreeting()}, ${user.surname} ${user.name}`
+		: user?.name
+		? `${getTimeGreeting()}, ${user.name}`
+		: `${getTimeGreeting()}, ${user.nickname}`;
 
 	const date = getCurrentDateFormatted();
 

@@ -47,7 +47,7 @@ export const App = () => (
 						<Route path="/register" element={<Register />} />
 						<Route path="/password-reset" element={<PasswordResetRequest />} />
 						<Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
-						<Route path="/profile/:username" element={<AuthRedirect />} />
+						<Route path="/profile/:nickname" element={<AuthRedirect />} />
 
 						<Route path="/authors" element={<Authors />} />
 

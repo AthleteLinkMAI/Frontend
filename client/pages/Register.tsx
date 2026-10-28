@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/apiClient";
+import { Calendar } from "@/components/ui/calendar";
 
 export default function Register() {
 	const { register } = useAuth();
@@ -9,7 +10,11 @@ export default function Register() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const [username, setUsername] = useState("");
+	const [nickname, setNickname] = useState("");
+	const [name, setName] = useState("");
+	const [surname, setSurname] = useState("");
+	const [birthdate, setBirthdate] = useState<Date | undefined>(undefined);
+	const [showCalendar, setShowCalendar] = useState(false);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,16 +26,31 @@ export default function Register() {
 		const upperOk = /[A-ZА-Я]/.test(password);
 		const lowerOk = /[a-zа-я]/.test(password);
 		const digitOk = /\d/.test(password);
-
 		return lengthOk && upperOk && lowerOk && digitOk;
+	};
+
+	// Формат YYYY-MM-DD
+	const formatDate = (date: Date) => {
+		const y = date.getFullYear();
+		const m = String(date.getMonth() + 1).padStart(2, "0");
+		const d = String(date.getDate()).padStart(2, "0");
+		return `${y}-${m}-${d}`;
+	};
+
+	// Для отображения в поле
+	const formatDateDisplay = (date: Date) => {
+		const d = String(date.getDate()).padStart(2, "0");
+		const m = String(date.getMonth() + 1).padStart(2, "0");
+		const y = date.getFullYear();
+		return `${d}.${m}.${y}`;
 	};
 
 	const handleRegister = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setError(null); // Сбрасываем ошибку
+		setError(null);
 
-		if (!username || !email || !password || !confirmPassword) {
-			setError("Пожалуйста, заполните все поля!");
+		if (!nickname || !email || !password || !confirmPassword || !birthdate) {
+			setError("Пожалуйста, заполните все обязательные поля!");
 			return;
 		}
 
@@ -40,16 +60,21 @@ export default function Register() {
 		}
 
 		if (!validatePasswordStrength(password)) {
-			setError("Пароль должен содержать минимум 8 символов, одну заглавную букву, одну строчную букву и одну цифру.");
+			setError(
+				"Пароль должен содержать минимум 8 символов, одну заглавную букву, одну строчную букву и одну цифру."
+			);
 			return;
 		}
 
 		setIsLoading(true);
 		try {
 			await register({
-				username,
+				nickname,
+				name: name.trim() === "" ? null : name.trim(),
+				surname: surname.trim() === "" ? null : surname.trim(),
 				email,
 				password,
+				birthdate: formatDate(birthdate),
 			});
 			navigate("/profile");
 		} catch (err) {
@@ -63,9 +88,18 @@ export default function Register() {
 		}
 	};
 
-	// Функции для сброса ошибки при изменении полей
-	const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setUsername(e.target.value);
+	const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setNickname(e.target.value);
+		setError(null);
+	};
+
+	const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setName(e.target.value);
+		setError(null);
+	};
+
+	const handleSurnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSurname(e.target.value);
 		setError(null);
 	};
 
@@ -84,9 +118,8 @@ export default function Register() {
 		setError(null);
 	};
 
- 	return (
+	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] flex items-center justify-center px-4 py-8 relative overflow-hidden">
-			{/* Animated Dart Emojis */}
 			<div className="absolute left-0 top-0 w-full h-full pointer-events-none">
 				<img
 					src="/lev_dartz.webp"
@@ -100,32 +133,23 @@ export default function Register() {
 				/>
 			</div>
 
-			{/* Registration Form Container */}
 			<div className="relative z-10 w-full max-w-[572px]">
 				<div className="bg-black/50 border border-[#E0E0E0] shadow-[0_82px_40px_rgba(100,100,100,0.08)] p-8 md:p-12 lg:p-16 transition-all duration-300">
 					<h1 className="text-2xl md:text-3xl lg:text-[31px] font-bold text-white text-center mb-8 md:mb-12 leading-[120%] tracking-tight">
 						Регистрация в AthleteLink
 					</h1>
 
-					{/* Show error */}
-					{error && (
-						<div className="mb-6 p-4 border border-red-500 bg-red-500/10">
-						<p className="text-red-500 text-center text-sm">{error}</p>
-						</div>
-					)}
-
-					{/* Register form */}
 					<form onSubmit={handleRegister} className="space-y-6">
-						{/* Username Field */}
+						{/* Nickname */}
 						<div className="relative">
 							<div className="border border-[#212121] bg-black p-4">
 								<label className="block text-white text-[10px] font-medium mb-2">
-									Имя пользователя
+									Имя пользователя <span className="text-red-500">*</span>
 								</label>
 								<input
 									type="text"
-									value={username}
-									onChange={handleUsernameChange}
+									value={nickname}
+									onChange={handleNicknameChange}
 									placeholder="pauchuck"
 									className="w-full bg-transparent text-[#616161] text-base outline-none placeholder:text-[#616161]"
 									required
@@ -134,11 +158,85 @@ export default function Register() {
 							</div>
 						</div>
 
-						{/* Email Field */}
+						{/* Name */}
 						<div className="relative">
 							<div className="border border-[#212121] bg-black p-4">
 								<label className="block text-white text-[10px] font-medium mb-2">
-									Адрес электронной почты
+									Имя
+								</label>
+								<input
+									type="text"
+									value={name}
+									onChange={handleNameChange}
+									placeholder="Иван"
+									className="w-full bg-transparent text-[#757575] text-base outline-none placeholder:text-[#757575]"
+									disabled={isLoading}
+								/>
+							</div>
+						</div>
+
+						{/* Surname */}
+						<div className="relative">
+							<div className="border border-[#212121] bg-black p-4">
+								<label className="block text-white text-[10px] font-medium mb-2">
+									Фамилия
+								</label>
+								<input
+									type="text"
+									value={surname}
+									onChange={handleSurnameChange}
+									placeholder="Иванов"
+									className="w-full bg-transparent text-[#757575] text-base outline-none placeholder:text-[#757575]"
+									disabled={isLoading}
+								/>
+							</div>
+						</div>
+
+						{/* Birthdate */}
+						<div className="relative">
+							<div className="border border-[#212121] bg-black p-4">
+								<label className="block text-white text-[10px] font-medium mb-2">
+									Дата рождения <span className="text-red-500">*</span>
+								</label>
+								<button
+									type="button"
+									onClick={() => setShowCalendar((v) => !v)}
+									disabled={isLoading}
+									className="w-full text-left bg-transparent text-base outline-none"
+								>
+									{birthdate ? (
+										<span className="text-white">
+											{formatDateDisplay(birthdate)}
+										</span>
+									) : (
+										<span className="text-[#757575]">дд.мм.гггг</span>
+									)}
+								</button>
+								{showCalendar && (
+									<div className="mt-3">
+										<Calendar
+											mode="single"
+											selected={birthdate}
+											onSelect={(d) => {
+												if (d instanceof Date) {
+													setBirthdate(d);
+													setShowCalendar(false);
+													setError(null);
+												}
+											}}
+											defaultMonth={birthdate || new Date(2000, 0)}
+											disabled={{ after: new Date() }}
+										/>
+									</div>
+								)}
+							</div>
+						</div>
+
+						{/* Email */}
+						<div className="relative">
+							<div className="border border-[#212121] bg-black p-4">
+								<label className="block text-white text-[10px] font-medium mb-2">
+									Адрес электронной почты <span className="text-red-500">*</span>
 								</label>
 								<input
 									type="email"
@@ -152,11 +250,11 @@ export default function Register() {
 							</div>
 						</div>
 
-						{/* Password Field */}
+						{/* Password */}
 						<div className="relative">
 							<div className="border border-[#212121] bg-black p-4">
 								<label className="block text-white text-[10px] font-medium mb-2">
-									Пароль
+									Пароль <span className="text-red-500">*</span>
 								</label>
 								<div className="flex items-center gap-2">
 									<input
@@ -183,11 +281,11 @@ export default function Register() {
 							</div>
 						</div>
 
-						{/* Confirm Password Field */}
+						{/* Confirm Password */}
 						<div className="relative">
 							<div className="border border-[#212121] bg-black p-4">
 								<label className="block text-white text-[10px] font-medium mb-2">
-									Подтвердите пароль
+									Подтвердите пароль <span className="text-red-500">*</span>
 								</label>
 								<div className="flex items-center gap-2">
 									<input
@@ -214,7 +312,12 @@ export default function Register() {
 							</div>
 						</div>
 
-						{/* Submit Button */}
+						{error && (
+							<div className="mb-6 p-4 border border-red-500 bg-red-500/10">
+								<p className="text-red-500 text-center text-sm">{error}</p>
+							</div>
+						)}
+
 						<button
 							type="submit"
 							disabled={isLoading}
@@ -223,21 +326,15 @@ export default function Register() {
 							{isLoading ? "Загрузка..." : "ЗАРЕГИСТРИРОВАТЬСЯ"}
 						</button>
 					</form>
-				
 
-					{/* Login Link */}
 					<p className="text-center text-white/25 text-[13px] mt-6">
 						Уже зарегистрированы?{" "}
-						<Link
-							to="/login"
-							className="hover:text-white/40 transition-colors"
-						>
+						<Link to="/login" className="hover:text-white/40 transition-colors">
 							Войти
 						</Link>
 					</p>
 				</div>
 
-				{/* Footer */}
 				<p className="text-center text-white text-lg md:text-xl font-bold mt-8 leading-[120%] tracking-tight">
 					Copyright Team Layar, 2025.
 				</p>

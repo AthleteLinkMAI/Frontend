@@ -1,66 +1,92 @@
-import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/apiClient"; // Путь к вашему apiClient
-import HeaderMenu from "@/components/HeaderMenu";
-import { requestResultForPlayer } from "@/constants/requestResult";
-
-// ------------------------------------------------------------------
-// 1. Типы данных на основе рукописных записей
-// ------------------------------------------------------------------
+import { api } from "@/lib/apiClient";
+import { useSports } from "@/hooks/useSports";
 
 export interface CommonStatsDto {
-	username: string;
+	id: string;
+	nickname: string;
+	name: string | null;
+	surname: string | null;
 	age: number;
+	registrationDate: string;
 }
 
 export interface BestSportDto {
-	sportName: string;
-	rank: string;
-	ratePoints: number;
-	maxRatePoints: number;
-	globalRates: number;
+	sportId: string;
+	score: number;
+	nextRankScore: number;
+	leaderboardPlace: number;
 	wins: number;
-	winRate: number;
+	winRatePercent: number;
+	rank: {
+		name: string;
+		tier: number;
+		scoreMin: number;
+		scoreMax: number;
+	};
 }
 
 export interface OtherSportDto {
-	sportName: string;
-	ratePoints: number;
-	maxRatePoints: number;
-	rank: string;
+	sportId: string;
+	score: number;
+	nextRankScore: number;
+	rank: {
+		name: string;
+		tier: number;
+		scoreMin: number;
+		scoreMax: number;
+	};
 }
 
-export interface LastGamePlayerDto {
-	userId: string;
-	username: string;
+export type BestSportWithName = BestSportDto & { sportName: string };
+export type OtherSportWithName = OtherSportDto & { sportName: string };
+
+export interface PublicProfile {
+	common: CommonStatsDto;
+	bestSport: BestSportWithName | null;
+	otherSports: OtherSportWithName[];
 }
 
-export interface LastGameDto {
-	gameName: string;
-	sportName: string;
-	dateGame: string;
-	result: requestResultForPlayer;
-	players: LastGamePlayerDto[];
+interface RawProfile {
+	common: CommonStatsDto;
+	bestSport: BestSportDto | null;
+	otherSports: OtherSportDto[];
 }
 
 export function usePublicProfile(userId: string | undefined) {
+	const { data: sports } = useSports();
+
 	return useQuery({
 		queryKey: ["public-profile", userId],
-		queryFn: async () => {
-			userId = "1";
+		queryFn: async (): Promise<RawProfile> => {
+
 			if (!userId) throw new Error("No userId");
 
-			const [common, bestSport, otherSports, lastGame] = await Promise.all([
-				api.get<CommonStatsDto>(`stats/user?userId=${userId}`),
-				api.get<BestSportDto>(`stats/best-sport?userId=${userId}`),
-				api.get<OtherSportDto[]>(`stats/other-sports?userId=${userId}`),
-				api.get<LastGameDto>(`stats/last-game?userId=${userId}`).catch(() => null), // Игра может отсутствовать
+			const [common, bestSport, otherSports] = await Promise.all([
+				api.get<CommonStatsDto>(`stats/user?userIds=${userId},`),
+				api.get<BestSportDto>(`players/${userId}/best-sport`),
+				api.get<OtherSportDto[]>(`players/${userId}/other-sports`),
 			]);
 
-			return { common, bestSport, otherSports, lastGame };
+			return { common, bestSport, otherSports };
 		},
-		// enabled: !!userId,
-		enabled: true,
+		select: (raw): PublicProfile => {
+			const nameById = new Map<string, string>(
+				(sports ?? []).map((s) => [s.id, s.name])
+			);
+
+			const enrich = <T extends { sportId: string }>(item: T | null) =>
+				item ? { ...item, sportName: nameById.get(item.sportId) ?? "" } : null;
+
+			return {
+				common: raw.common,
+				bestSport: enrich(raw.bestSport) as BestSportWithName | null,
+				otherSports: raw.otherSports.map(
+					(s) => ({ ...s, sportName: nameById.get(s.sportId) ?? "" }) as OtherSportWithName
+				),
+			};
+		},
+		enabled: !!userId,
 		staleTime: 1000 * 60 * 5,
 	});
 }

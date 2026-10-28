@@ -63,7 +63,7 @@ export default function Login() {
 					</h1>
 
 					<form onSubmit={handleLogin} className="space-y-6">
-						{/* Email/Username Field */}
+						{/* Email/Nickname Field */}
 						<div className="relative">
 							<div className="border border-[#212121] bg-black p-4">
 								<label className="block text-white text-[10px] font-medium mb-2">
