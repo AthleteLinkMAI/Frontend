@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
 import SidebarNav from "@/components/SidebarMenu";
@@ -9,42 +9,53 @@ import { useUserRequests } from "@/hooks/useUserRequests";
 export default function Requests() {
 	const navigate = useNavigate();
 	const { user } = useAuth();
-	const [page, setPage] = useState(0);
 
-	// Запрашиваем заявки текущего пользователя
 	const {
 		data,
-		isLoading: isRequestsLoading,
+		isLoading,
 		error,
 		isFetching,
+		isFetchingNextPage,
+		hasNextPage,
+		fetchNextPage,
 	} = useUserRequests({
 		userId: user?.id,
-		page,
-		forOrganizer: false, // false — все заявки, где участвует пользователь
+		forOrganizer: false, // все заявки, где участвует пользователь
 	});
 
-	const requests = data?.content ?? [];
-	const totalPages = data?.page?.totalPages ?? 0;
-	const totalElements = data?.page?.totalElements ?? 0;
+	// разворачиваем страницы в один массив
+	const requests = data?.pages.flatMap((p) => p.content) ?? [];
+	const totalElements = data?.pages[0]?.page?.totalElements ?? 0;
 
-	const handlePrev = () => {
-		if (page > 0) setPage((p) => p - 1);
-	};
+	// --- IntersectionObserver для подгрузки ---
+	const loadMoreRef = useRef<HTMLDivElement>(null);
 
-	const handleNext = () => {
-		if (page < totalPages - 1) setPage((p) => p + 1);
-	};
+	useEffect(() => {
+		const el = loadMoreRef.current;
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const first = entries[0];
+				if (first.isIntersecting && hasNextPage && !isFetchingNextPage) {
+					fetchNextPage();
+				}
+			},
+			{ rootMargin: "200px" } // подгружаем заранее, до самого низа
+		);
+
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-black to-[#493D02] overflow-y-auto">
 			<div className="flex min-h-screen">
 				<SidebarNav activePage="requests" />
 
-				{/* Main Content */}
 				<div className="flex-1 p-7 overflow-y-auto">
 					<HeaderMenu />
 
-					{/* Requests Section */}
 					<div className="rounded-[10px] bg-[#DDD]/50 p-8 min-h-[800px] relative">
 						<h2 className="text-black text-[50px] font-light text-center mb-2">
 							Мои заявки
@@ -56,8 +67,7 @@ export default function Requests() {
 						)}
 						{totalElements === 0 && <div className="mb-8" />}
 
-						{/* Loading / Error / Empty States */}
-						{isRequestsLoading && (
+						{isLoading && (
 							<p className="text-center text-xl">Загрузка...</p>
 						)}
 						{error && (
@@ -65,16 +75,16 @@ export default function Requests() {
 								Ошибка загрузки данных
 							</p>
 						)}
-						{!isRequestsLoading && !error && requests.length === 0 && (
+						{!isLoading && !error && requests.length === 0 && (
 							<p className="text-center text-xl text-gray-700">
 								У вас пока нет заявок.
 							</p>
 						)}
 
-						{/* Requests List */}
+						{/* Список */}
 						<div
 							className={`space-y-5 mb-8 transition-opacity ${
-								isFetching ? "opacity-50" : "opacity-100"
+								isFetching && !isFetchingNextPage ? "opacity-50" : "opacity-100"
 							}`}
 						>
 							{requests.map((request) => (
@@ -82,30 +92,19 @@ export default function Requests() {
 							))}
 						</div>
 
-						{/* Пагинация */}
-						{totalPages > 1 && (
-							<div className="flex items-center justify-center gap-4 mb-8">
-								<button
-									onClick={handlePrev}
-									disabled={page === 0 || isFetching}
-									className="px-5 py-2 rounded-lg bg-[#4182F9] text-white text-base disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3571e8] transition-colors"
-								>
-									Назад
-								</button>
-								<span className="text-black/70 text-base">
-									Страница {page + 1} из {totalPages}
-								</span>
-								<button
-									onClick={handleNext}
-									disabled={page >= totalPages - 1 || isFetching}
-									className="px-5 py-2 rounded-lg bg-[#4182F9] text-white text-base disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3571e8] transition-colors"
-								>
-									Вперёд
-								</button>
-							</div>
+						{/* Триггер подгрузки / индикаторы */}
+						<div ref={loadMoreRef} className="h-px" />
+
+						{isFetchingNextPage && (
+							<p className="text-center text-lg py-4">Загрузка ещё...</p>
+						)}
+						{!hasNextPage && requests.length > 0 && (
+							<p className="text-center text-gray-500 py-4">
+								Больше заявок нет
+							</p>
 						)}
 
-						{/* --- КНОПКА "СОЗДАТЬ СВОЮ" --- */}
+						{/* Кнопка создания */}
 						<div className="flex justify-center mt-12">
 							<button
 								onClick={() => navigate("/requests/create")}

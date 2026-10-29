@@ -17,14 +17,11 @@ export interface RequestItem {
 	status?: string;
 }
 
-interface PagedResponse<T> {
-	content: T[];
-	page?: {
-		size: number;
-		number: number;
-		totalElements: number;
-		totalPages: number;
-	};
+export interface ActiveRequestsParams {
+	sportId?: string | null;
+	startDate?: string | null; // ISO без мс, "YYYY-MM-DDTHH:mm:ssZ"
+	endDate?: string | null;
+	radius?: number | null;
 }
 
 function getPosition(): Promise<GeolocationPosition | null> {
@@ -48,13 +45,15 @@ function normalizeRequests(data: unknown): RequestItem[] {
 	if (!data) return [];
 	if (Array.isArray(data)) return data as RequestItem[];
 	if (typeof data === "object" && "content" in data) {
-		const content = (data as PagedResponse<RequestItem>).content;
+		const content = (data as { content: RequestItem[] }).content;
 		return Array.isArray(content) ? content : [];
 	}
 	return [];
 }
 
-async function fetchActiveRequests(): Promise<RequestItem[]> {
+async function fetchActiveRequests(
+	params: ActiveRequestsParams
+): Promise<RequestItem[]> {
 	let latitude = 0;
 	let longitude = 0;
 
@@ -68,24 +67,38 @@ async function fetchActiveRequests(): Promise<RequestItem[]> {
 		// игнорируем — работаем без геолокации
 	}
 
-	const params = new URLSearchParams({
+	const search = new URLSearchParams({
 		lat: String(latitude),
 		lon: String(longitude),
-		radius: "50000000000000",
-		startDate: toIsoNoMs(new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)),
-		endDate: toIsoNoMs(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)),
 	});
 
-	const data = await api.get<unknown>(`requests?${params.toString()}`);
+	// radius: null → без ограничения (не передаём)
+	if (params.radius != null) {
+		search.set("radius", String(params.radius));
+	}
+
+	if (params.sportId) {
+		search.set("sportId", params.sportId);
+	}
+
+	if (params.startDate) {
+		search.set("startDate", params.startDate);
+	}
+
+	if (params.endDate) {
+		search.set("endDate", params.endDate);
+	}
+
+	const data = await api.get<unknown>(`requests?${search.toString()}`);
 	return normalizeRequests(data);
 }
 
-export function useActiveRequests() {
+export function useActiveRequests(params: ActiveRequestsParams = {}) {
 	const { user, isLoading: isAuthLoading } = useAuth();
 
 	return useQuery({
-		queryKey: ["requests", "active"],
-		queryFn: fetchActiveRequests,
+		queryKey: ["requests", "active", params],
+		queryFn: () => fetchActiveRequests(params),
 		enabled: !isAuthLoading && !!user,
 		staleTime: 30_000,
 		retry: false,
