@@ -3,6 +3,60 @@ import { useNavigate } from "react-router-dom";
 import HeaderMenu from "@/components/HeaderMenu";
 import { useActiveRequests, RequestItem } from "@/hooks/useActiveRequests";
 import { DATE_FILTERS } from "@/constants/filterConstants";
+import { useSports, type Sport } from "@/hooks/useSports";
+
+// --- Преобразование выбранного date-фильтра в { startDate, endDate } ---
+function getDateRange(filter: string): { startDate: string | null; endDate: string | null } {
+	const startOfDay = (d: Date) => {
+		const x = new Date(d);
+		x.setHours(0, 0, 0, 0);
+		return x;
+	};
+	const endOfDay = (d: Date) => {
+		const x = new Date(d);
+		x.setHours(23, 59, 59, 999);
+		return x;
+	};
+	const toIso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
+
+	const today = startOfDay(new Date());
+
+	switch (filter) {
+		case "Сегодня":
+			return { startDate: toIso(today), endDate: toIso(endOfDay(today)) };
+		case "Завтра": {
+			const t = new Date(today);
+			t.setDate(t.getDate() + 1);
+			return { startDate: toIso(t), endDate: toIso(endOfDay(t)) };
+		}
+		case "На этой неделе": {
+			const day = today.getDay();
+			const diff = day === 0 ? -6 : 1 - day;
+			const start = new Date(today);
+			start.setDate(today.getDate() + diff);
+			const end = new Date(start);
+			end.setDate(start.getDate() + 6);
+			return { startDate: toIso(start), endDate: toIso(endOfDay(end)) };
+		}
+		case "На следующей неделе": {
+			const day = today.getDay();
+			const diff = day === 0 ? -6 : 1 - day;
+			const start = new Date(today);
+			start.setDate(today.getDate() + diff + 7);
+			const end = new Date(start);
+			end.setDate(start.getDate() + 6);
+			return { startDate: toIso(start), endDate: toIso(endOfDay(end)) };
+		}
+		case "В этом месяце": {
+			const start = new Date(today.getFullYear(), today.getMonth(), 1);
+			const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+			return { startDate: toIso(start), endDate: toIso(endOfDay(end)) };
+		}
+		case "За все время":
+		default:
+			return { startDate: null, endDate: null };
+	}
+}
 
 export default function AllRequests() {
 	const navigate = useNavigate();
@@ -15,20 +69,43 @@ export default function AllRequests() {
 	const sportDropdownRef = useRef<HTMLDivElement>(null);
 	const dateDropdownRef = useRef<HTMLDivElement>(null);
 
-	const { data, isLoading, error } = useActiveRequests();
+	// Справочник видов спорта — для сопоставления name → id
+	const { data: sports = [] } = useSports();
+
+	// ID выбранного спорта (null = все)
+	const selectedSportId = useMemo(() => {
+		if (sportFilter === "Все виды спорта") return null;
+		return sports.find((s) => s.name === sportFilter)?.id ?? null;
+	}, [sportFilter, sports]);
+
+	// Диапазон дат для запроса
+	const { startDate, endDate } = useMemo(() => getDateRange(dateFilter), [dateFilter]);
+
+	const { data, isLoading, error } = useActiveRequests({
+		sportId: selectedSportId,
+		startDate,
+		endDate,
+		// radius не задаём — бэкенд трактует null как «без ограничения»
+	});
 
 	const requests: RequestItem[] = useMemo(
 		() => (Array.isArray(data) ? data : []),
 		[data]
 	);
 
+	// Опции для фильтра спорта строим по справочнику (name), а не по заявкам,
+	// чтобы список не «прыгал» при подгрузке.
 	const availableSportOptions = useMemo(() => {
-		const unique = new Set<string>();
-		requests.forEach((r) => {
-			if (r.sportName) unique.add(r.sportName);
+		const names = new Set<string>();
+		sports.forEach((s) => {
+			if (s.name) names.add(s.name);
 		});
-		return ["Все виды спорта", ...Array.from(unique)];
-	}, [requests]);
+		// на случай, если в заявках есть спорт, которого нет в справочнике
+		requests.forEach((r) => {
+			if (r.sportName) names.add(r.sportName);
+		});
+		return ["Все виды спорта", ...Array.from(names).sort()];
+	}, [sports, requests]);
 
 	useEffect(() => {
 		if (!availableSportOptions.includes(sportFilter)) {
@@ -55,89 +132,8 @@ export default function AllRequests() {
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	const filteredRequests = useMemo(() => {
-		let currentRequests = requests;
-
-		if (sportFilter !== "Все виды спорта") {
-			currentRequests = currentRequests.filter(
-				(r) => r.sportName === sportFilter
-			);
-		}
-
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-
-		const dayOfWeek = today.getDay();
-		const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-		const startOfWeek = new Date(today);
-		startOfWeek.setDate(today.getDate() + diffToMonday);
-		startOfWeek.setHours(0, 0, 0, 0);
-
-		const endOfWeek = new Date(startOfWeek);
-		endOfWeek.setDate(startOfWeek.getDate() + 6);
-		endOfWeek.setHours(23, 59, 59, 999);
-
-		const startOfNextWeek = new Date(endOfWeek);
-		startOfNextWeek.setDate(endOfWeek.getDate() + 1);
-		startOfNextWeek.setHours(0, 0, 0, 0);
-
-		const endOfNextWeek = new Date(startOfNextWeek);
-		endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
-		endOfNextWeek.setHours(23, 59, 59, 999);
-
-		const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-		startOfMonth.setHours(0, 0, 0, 0);
-
-		const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-		endOfMonth.setHours(23, 59, 59, 999);
-
-		const byDateAsc = (a: RequestItem, b: RequestItem) =>
-			new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
-
-		const matchDay = (r: RequestItem, day: Date) => {
-			const d = new Date(r.eventDate);
-			d.setHours(0, 0, 0, 0);
-			return d.getTime() === day.getTime();
-		};
-
-		switch (dateFilter) {
-			case "Сегодня":
-				return currentRequests
-					.filter((r) => matchDay(r, today))
-					.sort(byDateAsc);
-			case "Завтра":
-				return currentRequests
-					.filter((r) => matchDay(r, tomorrow))
-					.sort(byDateAsc);
-			case "На этой неделе":
-				return currentRequests
-					.filter((r) => {
-						const d = new Date(r.eventDate);
-						return d >= startOfWeek && d <= endOfWeek;
-					})
-					.sort(byDateAsc);
-			case "На следующей неделе":
-				return currentRequests
-					.filter((r) => {
-						const d = new Date(r.eventDate);
-						return d >= startOfNextWeek && d <= endOfNextWeek;
-					})
-					.sort(byDateAsc);
-			case "В этом месяце":
-				return currentRequests
-					.filter((r) => {
-						const d = new Date(r.eventDate);
-						return d >= startOfMonth && d <= endOfMonth;
-					})
-					.sort(byDateAsc);
-			case "За все время":
-			default:
-				return [...currentRequests].sort(byDateAsc);
-		}
-	}, [requests, sportFilter, dateFilter]);
+	// Сервер уже фильтрует по sportId/датам — клиентская фильтрация не нужна.
+	const filteredRequests = requests;
 
 	const formatDateTime = (isoString: string) => {
 		try {
@@ -260,7 +256,7 @@ export default function AllRequests() {
 												</h3>
 											</button>
 											<p className="text-white text-[15px] font-light">
-												Активна
+												{request.status ?? "Активна"}
 											</p>
 										</div>
 
@@ -279,7 +275,7 @@ export default function AllRequests() {
 
 											<div className="border border-white rounded-[50px] px-4 py-1.5 min-w-[165px] text-center">
 												<span className="text-white text-[15px] font-light">
-													Игроков: {request.maxPlayers}
+													Игроков: {request.currentPlayers}/{request.maxPlayers}
 												</span>
 											</div>
 
