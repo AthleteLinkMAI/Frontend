@@ -36,16 +36,12 @@ export default function Leaderboard() {
 	}, []);
 
 	const {
-		data: leaderboardData,
+		entries: allEntries,
 		fetchNextPage,
 		hasNextPage,
 		isFetchingNextPage,
 		isLoading: isLeaderboardLoading,
 	} = useLeaderboard(selectedSportId);
-
-	// Собираем все записи из всех загруженных страниц
-	const allEntries: LeaderboardEntry[] =
-		leaderboardData?.pages.flatMap((page) => page ?? []) ?? [];
 
 	const selectedSport = sports.find((s) => s.id === selectedSportId);
 
