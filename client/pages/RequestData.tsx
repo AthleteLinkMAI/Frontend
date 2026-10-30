@@ -675,16 +675,13 @@ export default function RequestData() {
 								<div className="flex-1">
 									<div className="border-[0.5px] border-white rounded-[50px] p-8 mb-8 relative">
 										<h1 className="text-white text-[50px] font-light text-center mb-8">
-											Заявка №{requestId}
+											Заявка {title}
 										</h1>
 
 										<div className="mb-6">
 											<h2 className="text-white text-[30px] font-light mb-2">
-												{title}
-											</h2>
-											<p className="text-white text-[25px] font-light">
 												{sportName}
-											</p>
+											</h2>
 										</div>
 
 										<div className="mb-6">
@@ -759,15 +756,6 @@ export default function RequestData() {
 								</div>
 
 								<div className="w-[412px] flex flex-col">
-									<div className="relative mb-[30px] flex justify-end">
-										<div className="relative w-110 h-110">
-											<img
-												src="/basket_decor.webp"
-												className="w-full h-full object-contain rounded-xl"
-											/>
-										</div>
-									</div>
-
 									{renderStatusMessage()}
 
 									<div className="flex flex-col gap-6">
