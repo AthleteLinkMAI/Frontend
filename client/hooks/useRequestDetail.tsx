@@ -36,21 +36,24 @@ export interface RequestDetail {
 	participants: Participant[];
 }
 
-export interface GameResultPlayer {
+export type GameResultStatus = "PENDING" | "CONFIRMED" | "DISPUTED";
+export type GameOutcome = "WIN" | "LOSS" | "DRAW";
+
+export interface PlayerResultDto {
 	userId: string;
-	outcome: "WIN" | "LOSS" | "DRAW";
-	ratingChange: number;
+	outcome: GameOutcome;
+	ratingChange: number | null;
 }
 
-export interface GameResult {
+export interface RoundResultDetailsDto {
 	id: string;
 	activityRequestId: string;
+	roundNumber: number;
 	sportId: number;
-	status: "PENDING" | "CONFIRMED" | "DISPUTED";
+	status: GameResultStatus;
 	createdAt: string;
-	players: GameResultPlayer[];
+	players: PlayerResultDto[];
 }
-
 
 export function useRequestDetail(id: string) {
 	const { user } = useAuth();
@@ -62,17 +65,23 @@ export function useRequestDetail(id: string) {
 	})
 }
 
-export function useGameResult(
-	id: string | undefined,
-	enabled: boolean,
-) {
+export function useGameResult(id: string | undefined, enabled: boolean) {
 	return useQuery({
 		queryKey: ["request", id, "result"],
-		queryFn: () => api.get<GameResult>(`results/by-request/${id}`),
+		queryFn: async (): Promise<RoundResultDetailsDto[]> => {
+			const data = await api.get<RoundResultDetailsDto[] | null>(
+				`results/by-request/${id}`
+			);
+			if (!data) return [];
+			return data
+				.slice()
+				.sort((a, b) => a.roundNumber - b.roundNumber)
+				.map((r) => ({ ...r, players: r.players ?? [] }));
+		},
 		enabled: !!id && enabled,
 		staleTime: 30_000,
 		retry: (failureCount, error) => {
-			// ретраим только 404 — Game Service может создать результат не сразу
+			// 404 — результата ещё нет, ретраим
 			if (error instanceof ApiError && error.status === 404) {
 				return failureCount < 5;
 			}
