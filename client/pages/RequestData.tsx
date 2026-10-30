@@ -7,7 +7,8 @@ import {
 	useRequestDetail,
 	useGameResult,
 	type Participant,
-	type GameResult,
+	RoundResultDetailsDto,
+	PlayerResultDto,
 } from "@/hooks/useRequestDetail";
 import { useUserNames } from "@/hooks/useUserNames";
 import { useAuth } from "@/hooks/useAuth";
@@ -157,43 +158,106 @@ const RoundModal: React.FC<RoundModalProps> = ({
 /*  Блок результата игры (Game Service)                               */
 /* ------------------------------------------------------------------ */
 
-const GameResultBlock: React.FC<{
-	result: GameResult;
+const outcomeColor = (outcome: PlayerResultDto["outcome"]) =>
+	outcome === "WIN"
+		? "text-green-400"
+		: outcome === "LOSS"
+			? "text-red-400"
+			: "text-white/70";
+
+const outcomeLabel = (outcome: PlayerResultDto["outcome"]) =>
+	outcome === "WIN" ? "Победа" : outcome === "LOSS" ? "Поражение" : "Ничья";
+
+const statusLabel = (status: RoundResultDetailsDto["status"]) =>
+	status === "CONFIRMED"
+		? "Подтверждён"
+		: status === "DISPUTED"
+			? "Оспорен"
+			: "Ожидает подтверждения";
+
+export const GameResultBlock: React.FC<{
+	results: RoundResultDetailsDto[];
 	usernames: Record<string, string>;
-}> = ({ result, usernames }) => {
+}> = ({ results, usernames }) => {
 	const name = (id: string) => usernames[id] ?? `Игрок ${id.slice(0, 8)}`;
+
+	if (results.length === 0) {
+		return (
+			<div className="mb-8 text-white/60 text-center">
+				Результат игры ещё не готов, обновите страницу чуть позже.
+			</div>
+		);
+	}
 
 	return (
 		<div className="mb-8">
 			<h3 className="text-3xl font-semibold mb-4 text-white">
-				Результат игры
+				Результаты по раундам
 			</h3>
-			<div className="text-white/60 text-sm mb-3">
-				Статус: {result.status} · Записано:{" "}
-				{new Date(result.createdAt).toLocaleString()}
-			</div>
-			<div className="space-y-2">
-				{result.players.map((p) => {
-					const color =
-						p.outcome === "WIN"
-							? "text-green-400"
-							: p.outcome === "LOSS"
-								? "text-red-400"
-								: "text-white/70";
-					const sign = p.ratingChange >= 0 ? "+" : "";
-					return (
-						<div
-							key={p.userId}
-							className="flex justify-between border border-white/30 rounded-2xl p-3 text-white"
-						>
-							<span>{name(p.userId)}</span>
-							<span className={color}>
-								{p.outcome} {sign}
-								{p.ratingChange}
+
+			<div className="space-y-6">
+				{results.map((round) => (
+					<div
+						key={round.id}
+						className="rounded-2xl border border-white/20 p-4"
+					>
+						<div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+							<h4 className="text-xl font-semibold text-white">
+								Раунд {round.roundNumber}
+							</h4>
+							<span
+								className={`text-sm ${
+									round.status === "CONFIRMED"
+										? "text-green-400"
+										: round.status === "DISPUTED"
+											? "text-red-400"
+											: "text-yellow-300"
+								}`}
+							>
+								{statusLabel(round.status)}
 							</span>
 						</div>
-					);
-				})}
+
+						<div className="text-white/50 text-xs mb-3">
+							Записано: {new Date(round.createdAt).toLocaleString()}
+						</div>
+
+						<div className="space-y-2">
+							{(round.players ?? []).map((p) => {
+								const sign =
+									p.ratingChange == null
+										? ""
+										: p.ratingChange >= 0
+											? "+"
+											: "";
+								return (
+									<div
+										key={p.userId}
+										className="flex justify-between border border-white/30 rounded-2xl p-3 text-white"
+									>
+										<span className="truncate">{name(p.userId)}</span>
+										<span className={outcomeColor(p.outcome)}>
+											{outcomeLabel(p.outcome)}
+											{p.ratingChange != null && (
+												<>
+													{" "}
+													({sign}
+													{p.ratingChange})
+												</>
+											)}
+										</span>
+									</div>
+								);
+							})}
+
+							{(round.players ?? []).length === 0 && (
+								<p className="text-white/50 text-sm">
+									Нет данных об игроках этого раунда.
+								</p>
+							)}
+						</div>
+					</div>
+				))}
 			</div>
 		</div>
 	);
@@ -216,7 +280,7 @@ export default function RequestData() {
 	} = useRequestDetail(id);
 
 	const isCompleted = requestData?.status === "COMPLETED";
-	const { data: gameResult } = useGameResult(id, isCompleted);
+	const { data: gameResults } = useGameResult(id, isCompleted);
 
 	const [actionLoading, setActionLoading] = useState(false);
 	const [actionError, setActionError] = useState<string | null>(null);
@@ -719,18 +783,8 @@ export default function RequestData() {
 										</div>
 									</div>
 
-									{status === "COMPLETED" && gameResult && (
-										<GameResultBlock
-											result={gameResult}
-											usernames={usernames}
-										/>
-									)}
-
-									{status === "COMPLETED" && !gameResult && (
-										<div className="mb-8 text-white/60 text-center">
-											Результат игры ещё не готов, обновите
-											страницу чуть позже.
-										</div>
+									{status === "COMPLETED" && (
+										<GameResultBlock results={gameResults} usernames={usernames} />
 									)}
 
 									<div className="my-8">
