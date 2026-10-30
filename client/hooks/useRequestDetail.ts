@@ -60,7 +60,10 @@ export function useRequestDetail(id: string) {
 
 	return useQuery({
 		queryKey: ["request", id],
-		queryFn: () => api.get<RequestDetail>(`requests/${id}`),
+		queryFn: async () => {
+			const data = await api.get<RequestDetail>(`requests/${id}`);
+			return { ...data, participants: data.participants ?? [] };
+		},
 		enabled: !!id && !!user,
 	})
 }
