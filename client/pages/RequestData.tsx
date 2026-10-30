@@ -280,7 +280,7 @@ export default function RequestData() {
 	} = useRequestDetail(id);
 
 	const isCompleted = requestData?.status === "COMPLETED";
-	const { data: gameResults } = useGameResult(id, isCompleted);
+	const { data: gameResults = [] } = useGameResult(id, isCompleted);
 
 	const [actionLoading, setActionLoading] = useState(false);
 	const [actionError, setActionError] = useState<string | null>(null);
