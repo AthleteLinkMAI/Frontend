@@ -76,6 +76,9 @@ async function fetchActiveRequests(
 	if (params.radius != null) {
 		search.set("radius", String(params.radius));
 	}
+	else {
+		search.set("radius", "50000000000000");
+	}
 
 	if (params.sportId) {
 		search.set("sportId", params.sportId);
