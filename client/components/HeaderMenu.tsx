@@ -18,33 +18,38 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 
 	const { data: userRequestsData, isLoading } = useUserRequests({
 		userId: user?.id,
-		page: 0,
 		forOrganizer: true,
+		statuses: ["PLANNED", "ACTIVE"], // активные = запланированные + идущие
 	});
 
-	const activeRequests = Array.isArray(userRequestsData?.content)
-		? userRequestsData.content
-		: [];
+	// useInfiniteQuery: склеиваем страницы в плоский список
+	const activeRequests =
+		userRequestsData?.pages.flatMap((p) => p.content) ?? [];
 
-	const greeting = user?.surname && user?.name
-		? `${getTimeGreeting()}, ${user.surname} ${user.name}`
-		: user?.name
-		? `${getTimeGreeting()}, ${user.name}`
-		: `${getTimeGreeting()}, ${user.nickname}`;
+	const greeting =
+		user?.surname && user?.name
+			? `${getTimeGreeting()}, ${user.surname} ${user.name}`
+			: user?.name
+				? `${getTimeGreeting()}, ${user.name}`
+				: `${getTimeGreeting()}, ${user?.nickname ?? "гость"}`;
 
 	const date = getCurrentDateFormatted();
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
-			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+			if (
+				dropdownRef.current &&
+				!dropdownRef.current.contains(event.target as Node)
+			) {
 				setIsDropdownOpen(false);
 			}
 		};
 		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
+		return () =>
+			document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+	const toggleDropdown = () => setIsDropdownOpen((v) => !v);
 
 	const handleCardClick = (id: string) => {
 		navigate(`/requests/${id}`);
@@ -66,7 +71,7 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 					className="w-[250px] h-[47px] rounded-[10px] bg-white/50 flex items-center justify-between px-4 hover:bg-white/70 transition-colors relative z-10"
 				>
 					<span className="text-black text-base font-medium">
-						Активные заявки{" "}
+						Мои заявки{" "}
 						{activeRequests.length > 0 && `(${activeRequests.length})`}
 					</span>
 					<svg
@@ -88,20 +93,22 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 				</button>
 
 				{isDropdownOpen && (
-					<div className="absolute top-full mt-2 w-[500px] max-h-[400px] overflow-y-auto bg-[#DDD]/95 backdrop-blur-md rounded-[15px] border border-white/30 shadow-xl z-[9999] p-4">
+					<div className="absolute top-full right-0 mt-2 w-[500px] max-h-[400px] overflow-y-auto bg-[#DDD]/95 backdrop-blur-md rounded-[15px] border border-white/30 shadow-xl z-50 p-4">
 						{isLoading && !userRequestsData ? (
 							<div className="text-center py-4">
 								<p className="text-black text-sm">Загрузка...</p>
 							</div>
 						) : activeRequests.length === 0 ? (
 							<div className="text-center py-4">
-								<p className="text-black text-sm">Активные заявки отсутствуют</p>
+								<p className="text-black text-sm">
+									У вас нет активных заявок
+								</p>
 							</div>
 						) : (
 							<div>
 								<div className="flex justify-between items-center mb-3">
 									<h3 className="text-black text-lg font-medium">
-										Активные заявки ({activeRequests.length})
+										Мои активные заявки ({activeRequests.length})
 									</h3>
 									<button
 										onClick={() => {
@@ -130,7 +137,7 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 											</p>
 											<button
 												onClick={() => {
-													navigate("/requests");
+													navigate("/my-requests");
 													setIsDropdownOpen(false);
 												}}
 												className="text-[#4182F9] text-xs hover:underline mt-1"
@@ -146,7 +153,7 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 				)}
 			</div>
 
-			<div className="flex items-center gap-4">
+			<div className="flex items-center gap-4 relative z-10">
 				<button
 					onClick={() => navigate("/requests")}
 					className="w-[46px] h-[47px] rounded-[10px] bg-white/50 flex items-center justify-center hover:bg-white/70 transition-colors"
@@ -167,16 +174,14 @@ export default function HeaderMenu({ onProfileClick }: HeaderMenuProps) {
 
 				<button
 					onClick={() => navigate("/leaderboard")}
-					className="w-[46px] h-[47px] rounded-[10px] bg-white/50 flex items-center justify-center hover:bg-white/70 transition-colors"
+					className="w-[46px] h-[47px] rounded-[10px] bg-white/50 flex items-center justify-center hover:bg-white/70 transition-colors relative"
 				>
-					<div className="w-[46px] h-[47px] rounded-[10px] bg-white/50 flex items-center justify-center relative">
-						<div className="w-[7px] h-[20px] border-[0.3px] border-black bg-[#D9D9D9] absolute left-3 top-[13px]"></div>
-						<div className="w-[7px] h-[11px] border-[0.3px] border-black bg-[#D9D9D9] absolute left-[19px] top-[22px]"></div>
-						<div className="w-[7px] h-[16px] border-[0.3px] border-black bg-[#D9D9D9] absolute left-[26px] top-[17px]"></div>
-					</div>
+					<div className="w-[7px] h-[20px] border-[0.3px] border-black bg-[#D9D9D9] absolute left-3 top-[13px]" />
+					<div className="w-[7px] h-[11px] border-[0.3px] border-black bg-[#D9D9D9] absolute left-[19px] top-[22px]" />
+					<div className="w-[7px] h-[16px] border-[0.3px] border-black bg-[#D9D9D9] absolute left-[26px] top-[17px]" />
 				</button>
 
-				<button onClick={onProfileClick || (() => navigate("/profile"))}>
+				<button onClick={onProfileClick ?? (() => navigate("/profile"))}>
 					<img
 						src="/placeholder_avatar.jpg"
 						alt="Profile"

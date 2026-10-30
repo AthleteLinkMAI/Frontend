@@ -13,6 +13,7 @@ import {
 import { useUserNames } from "@/hooks/useUserNames";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
+import { set } from "date-fns";
 
 /* ------------------------------------------------------------------ */
 /*  Модалка ввода результата раунда                                    */
@@ -313,6 +314,11 @@ export default function RequestData() {
 			setActionError(null);
 			try {
 				await api.post(`requests/${id}/${endpoint}`, body ?? undefined);
+				if (endpoint === "complete") {
+					await new Promise((resolve) =>
+						setTimeout(resolve, 4000),
+					);
+				}
 
 				if (endpoint === "cancel") {
 					navigate("/requests");

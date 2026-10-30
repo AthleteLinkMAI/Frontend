@@ -1,7 +1,12 @@
-import type { RequestItem } from "@/hooks/useActiveRequests";
-
 interface SmallRequestCardProps {
- 	request: RequestItem;
+ 	request: {
+		id: string;
+		title: string;
+		eventDate: string;
+		registrationOpen: boolean;
+		currentPlayers: number;
+		maxPlayers: number;
+	};
 }
 
 export default function SmallRequestCard({ request }: SmallRequestCardProps) {
@@ -10,9 +15,9 @@ export default function SmallRequestCard({ request }: SmallRequestCardProps) {
 			<div
 				className="absolute inset-0 -z-10 rounded-[20px]"
 				style={{
-				backgroundImage: "url('/silver.png')",
-				backgroundSize: "120px 120px",
-				opacity: 0.05,
+					backgroundImage: "url('/silver.png')",
+					backgroundSize: "120px 120px",
+					opacity: 0.05,
 				}}
 			></div>
 

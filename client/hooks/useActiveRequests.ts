@@ -19,7 +19,7 @@ export interface RequestItem {
 
 export interface ActiveRequestsParams {
 	sportId?: string | null;
-	startDate?: string | null; // ISO без мс, "YYYY-MM-DDTHH:mm:ssZ"
+	startDate?: string | null;
 	endDate?: string | null;
 	radius?: number | null;
 }
@@ -35,10 +35,6 @@ function getPosition(): Promise<GeolocationPosition | null> {
 			{ enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
 		);
 	});
-}
-
-function toIsoNoMs(date: Date): string {
-	return date.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 function normalizeRequests(data: unknown): RequestItem[] {
